@@ -44,7 +44,7 @@ const Index = () => {
         selectedModel,
         selectedRole
       );
-      setAiResponse(response.output);
+      setAiResponse(response.final_prompt);
     } catch (error) {
       setAiResponse("Error: Failed to get response from AI");
     } finally {
