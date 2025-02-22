@@ -30,7 +30,7 @@ const Index = () => {
   };
 
   const handleGregify = async () => {
-    if (!checkAuthAndUsage()) return;
+    // if (!checkAuthAndUsage()) return;
 
     try {
       const response = await ApiService.gregifyPrompt(sessionId, prompt, selectedModel, selectedAgent);

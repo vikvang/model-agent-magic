@@ -1,0 +1,655 @@
+{
+    "training_examples": [
+      {
+        "original_prompt": {
+          "text": "analyze this dataset",
+          "user_context": {
+            "apparent_expertise": "intermediate",
+            "domain": "data_analysis",
+            "language": "en"
+          }
+        },
+        "analysis": {
+          "issues": [
+            {
+              "type": "missing_objective",
+              "details": "No specific analysis goal",
+              "impact": "Unable to determine relevant metrics or methods"
+            },
+            {
+              "type": "missing_context",
+              "details": "No dataset description or features specified",
+              "impact": "Cannot select appropriate analytical approach"
+            },
+            {
+              "type": "missing_output",
+              "details": "No required output format or visualization preferences",
+              "impact": "Risk of delivering unusable results"
+            }
+          ],
+          "prompt_pattern": "imperative_vague",
+          "completeness_score": 0.1
+        },
+        "improved_prompt": {
+          "text": "Analyze the provided customer churn dataset to identify the top 3 factors contributing to customer departure. Create a statistical analysis including correlation coefficients and p-values. Present the results with: 1) A summary table of key findings, 2) Visualizations showing the relationships between churn and key factors, and 3) Actionable recommendations based on the analysis. Use Python and provide the code.",
+          "components": {
+            "task_verb": "Analyze",
+            "data_context": "customer churn dataset",
+            "specific_objectives": [
+              "identify top 3 churn factors",
+              "statistical analysis",
+              "recommendations"
+            ],
+            "output_requirements": {
+              "format": ["summary table", "visualizations", "recommendations"],
+              "code": "Python"
+            }
+          }
+        },
+        "improvement_rationale": {
+          "additions": [
+            {
+              "element": "specific_objective",
+              "purpose": "Focus analysis direction",
+              "impact": "Enables targeted statistical approach"
+            },
+            {
+              "element": "output_format",
+              "purpose": "Structure deliverables",
+              "impact": "Ensures actionable results"
+            },
+            {
+              "element": "technical_requirements",
+              "purpose": "Specify implementation",
+              "impact": "Guarantees reproducible analysis"
+            }
+          ],
+          "completeness_score": 0.95
+        }
+      },
+      {
+        "original_prompt": {
+          "text": "train an ml model for sentiment",
+          "user_context": {
+            "apparent_expertise": "intermediate",
+            "domain": "machine_learning",
+            "language": "en"
+          }
+        },
+        "analysis": {
+          "issues": [
+            {
+              "type": "missing_data_specs",
+              "details": "No dataset characteristics specified",
+              "impact": "Cannot determine appropriate model architecture"
+            },
+            {
+              "type": "missing_requirements",
+              "details": "No performance metrics or thresholds defined",
+              "impact": "Unable to evaluate model success"
+            },
+            {
+              "type": "missing_context",
+              "details": "No deployment environment specified",
+              "impact": "May not meet production requirements"
+            }
+          ],
+          "prompt_pattern": "imperative_technical",
+          "completeness_score": 0.2
+        },
+        "improved_prompt": {
+          "text": "Develop a sentiment analysis model using the provided customer reviews dataset (50K samples, English text). Requirements: 1) Use BERT-based architecture fine-tuned for 3-class sentiment (positive, negative, neutral), 2) Achieve minimum 85% F1-score on validation set, 3) Handle texts up to 512 tokens, 4) Optimize for inference speed (<100ms on CPU). Include: data preprocessing steps, training configuration, evaluation metrics (precision, recall, F1 per class), and confusion matrix. Provide code in PyTorch with comments.",
+          "components": {
+            "task_verb": "Develop",
+            "model_specs": {
+              "architecture": "BERT-based",
+              "task_type": "3-class sentiment",
+              "performance_metrics": {
+                "min_f1": 0.85,
+                "max_inference_time": "100ms"
+              }
+            },
+            "deliverables": [
+              "preprocessing code",
+              "training config",
+              "evaluation metrics",
+              "confusion matrix"
+            ]
+          }
+        },
+        "improvement_rationale": {
+          "additions": [
+            {
+              "element": "data_specifications",
+              "purpose": "Guide architecture choice",
+              "impact": "Appropriate model selection"
+            },
+            {
+              "element": "performance_requirements",
+              "purpose": "Define success criteria",
+              "impact": "Measurable outcomes"
+            },
+            {
+              "element": "deployment_constraints",
+              "purpose": "Ensure production viability",
+              "impact": "Usable model"
+            }
+          ],
+          "completeness_score": 0.95
+        }
+      },
+      {
+        "original_prompt": {
+          "text": "create ui for dashboard",
+          "user_context": {
+            "apparent_expertise": "intermediate",
+            "domain": "frontend_development",
+            "language": "en"
+          }
+        },
+        "analysis": {
+          "issues": [
+            {
+              "type": "missing_requirements",
+              "details": "No specific components or layouts defined",
+              "impact": "Unclear design direction"
+            },
+            {
+              "type": "missing_interactivity",
+              "details": "No user interaction specifications",
+              "impact": "Incomplete functionality"
+            },
+            {
+              "type": "missing_design",
+              "details": "No styling or brand guidelines mentioned",
+              "impact": "Inconsistent look and feel"
+            }
+          ],
+          "prompt_pattern": "imperative_design",
+          "completeness_score": 0.15
+        },
+        "improved_prompt": {
+          "text": "Create a responsive analytics dashboard UI using React and Tailwind CSS. Include: 1) Header with company logo and user profile, 2) Sidebar with navigation menu, 3) Main content area with 4 card components showing KPIs, 4) Line chart for trend analysis, 5) Data table with sorting/filtering. Requirements: Mobile-first design, dark/light theme support, accessibility compliance (WCAG 2.1), loading states for async data. Use the provided design system (colors, typography, spacing). Implement smooth transitions (300ms ease-in-out) for interactive elements.",
+          "components": {
+            "task_verb": "Create",
+            "tech_stack": {
+              "framework": "React",
+              "styling": "Tailwind CSS"
+            },
+            "layout_components": [
+              "header",
+              "sidebar",
+              "main content",
+              "charts",
+              "table"
+            ],
+            "requirements": {
+              "responsive": true,
+              "themes": ["dark", "light"],
+              "accessibility": "WCAG 2.1",
+              "animations": "300ms ease-in-out"
+            }
+          }
+        },
+        "improvement_rationale": {
+          "additions": [
+            {
+              "element": "specific_components",
+              "purpose": "Define UI structure",
+              "impact": "Clear implementation path"
+            },
+            {
+              "element": "technical_requirements",
+              "purpose": "Ensure quality standards",
+              "impact": "Professional result"
+            },
+            {
+              "element": "design_system",
+              "purpose": "Maintain consistency",
+              "impact": "Cohesive interface"
+            }
+          ],
+          "completeness_score": 0.95
+        }
+      },
+      {
+        "original_prompt": {
+          "text": "write api documentation",
+          "user_context": {
+            "apparent_expertise": "intermediate",
+            "domain": "technical_writing",
+            "language": "en"
+          }
+        },
+        "analysis": {
+          "issues": [
+            {
+              "type": "missing_scope",
+              "details": "No API endpoints specified",
+              "impact": "Incomplete documentation"
+            },
+            {
+              "type": "missing_format",
+              "details": "No documentation standard specified",
+              "impact": "Inconsistent documentation"
+            },
+            {
+              "type": "missing_audience",
+              "details": "No target audience defined",
+              "impact": "May not meet user needs"
+            }
+          ],
+          "prompt_pattern": "imperative_documentation",
+          "completeness_score": 0.1
+        },
+        "improved_prompt": {
+          "text": "Create OpenAPI 3.0 documentation for the user management API endpoints (/users/*, /auth/*). Include: 1) Detailed endpoint descriptions with HTTP methods, 2) Request/response schemas with examples, 3) Authentication requirements, 4) Error codes and handling, 5) Rate limiting details. Target audience: External developers integrating our API. Use clear, concise language and provide code examples in Python and JavaScript. Include pagination parameters and response format for list endpoints. Document all optional parameters and their default values.",
+          "components": {
+            "task_verb": "Create",
+            "documentation_standard": "OpenAPI 3.0",
+            "scope": ["users endpoints", "auth endpoints"],
+            "required_sections": [
+              "endpoint descriptions",
+              "schemas",
+              "authentication",
+              "errors",
+              "rate limiting"
+            ],
+            "audience": "external developers"
+          }
+        },
+        "improvement_rationale": {
+          "additions": [
+            {
+              "element": "documentation_standard",
+              "purpose": "Ensure consistency",
+              "impact": "Professional documentation"
+            },
+            {
+              "element": "comprehensive_scope",
+              "purpose": "Complete coverage",
+              "impact": "Usable reference"
+            },
+            {
+              "element": "audience_focus",
+              "purpose": "Target content appropriately",
+              "impact": "Effective documentation"
+            }
+          ],
+          "completeness_score": 0.95
+        }
+      },
+      {
+        "original_prompt": {
+          "text": "analyze market trends",
+          "user_context": {
+            "apparent_expertise": "intermediate",
+            "domain": "market_research",
+            "language": "en"
+          }
+        },
+        "analysis": {
+          "issues": [
+            {
+              "type": "missing_industry",
+              "details": "No specific market sector defined",
+              "impact": "Unfocused analysis"
+            },
+            {
+              "type": "missing_timeframe",
+              "details": "No analysis period specified",
+              "impact": "Unclear trend scope"
+            },
+            {
+              "type": "missing_metrics",
+              "details": "No specific metrics requested",
+              "impact": "Vague insights"
+            }
+          ],
+          "prompt_pattern": "imperative_analysis",
+          "completeness_score": 0.15
+        },
+        "improved_prompt": {
+          "text": "Analyze market trends in the renewable energy sector over the past 5 years (2020-2024), focusing on: 1) Solar and wind energy adoption rates in major markets (US, EU, China), 2) Investment patterns and major funding rounds, 3) Regulatory changes impacting market growth. Deliverables: Market size analysis (CAGR), competitive landscape (top 5 companies by market share), emerging technologies impact assessment, and 2-year forecast. Include data visualizations for key metrics and cite primary data sources.",
+          "components": {
+            "task_verb": "Analyze",
+            "industry": "renewable energy",
+            "timeframe": "2020-2024",
+            "focus_areas": [
+              "adoption rates",
+              "investments",
+              "regulations"
+            ],
+            "deliverables": [
+              "market size",
+              "competitive analysis",
+              "technology assessment",
+              "forecast"
+            ]
+          }
+        },
+        "improvement_rationale": {
+          "additions": [
+            {
+              "element": "industry_focus",
+              "purpose": "Target analysis",
+              "impact": "Relevant insights"
+            },
+            {
+              "element": "specific_metrics",
+              "purpose": "Define success criteria",
+              "impact": "Actionable results"
+            },
+            {
+              "element": "timeframe",
+              "purpose": "Scope analysis",
+              "impact": "Meaningful trends"
+            }
+          ],
+          "completeness_score": 0.95
+        }
+      },
+      {
+        "original_prompt": {
+          "text": "make an api endpoint",
+          "user_context": {
+            "apparent_expertise": "intermediate",
+            "domain": "backend_development",
+            "language": "en"
+          }
+        },
+        "analysis": {
+          "issues": [
+            {
+              "type": "missing_specification",
+              "details": "No HTTP method specified",
+              "impact": "Unclear API behavior"
+            },
+            {
+              "type": "missing_requirements",
+              "details": "No input/output format defined",
+              "impact": "Cannot implement proper data handling"
+            },
+            {
+              "type": "missing_context",
+              "details": "No authentication requirements specified",
+              "impact": "Security concerns"
+            }
+          ],
+          "prompt_pattern": "imperative_basic",
+          "completeness_score": 0.15
+        },
+        "improved_prompt": {
+          "text": "Create a RESTful API endpoint using Node.js and Express that handles POST requests at '/api/v1/users'. The endpoint should: 1) Accept JSON input with user registration data (email, password, name), 2) Validate input fields (email format, password min 8 chars), 3) Hash the password using bcrypt, 4) Store data in MongoDB, 5) Return a JWT token upon successful registration. Include error handling for duplicate emails and invalid input. The response should follow standard HTTP status codes.",
+          "components": {
+            "task_verb": "Create",
+            "technology_stack": {
+              "framework": "Node.js/Express",
+              "database": "MongoDB",
+              "security": ["bcrypt", "JWT"]
+            },
+            "specifications": {
+              "method": "POST",
+              "route": "/api/v1/users",
+              "input_validation": ["email format", "password length"],
+              "error_handling": ["duplicates", "invalid input"]
+            }
+          }
+        },
+        "improvement_rationale": {
+          "additions": [
+            {
+              "element": "technical_stack",
+              "purpose": "Define implementation environment",
+              "impact": "Clear development path"
+            },
+            {
+              "element": "security_requirements",
+              "purpose": "Ensure data protection",
+              "impact": "Secure endpoint implementation"
+            },
+            {
+              "element": "error_handling",
+              "purpose": "Robust implementation",
+              "impact": "Production-ready code"
+            }
+          ],
+          "completeness_score": 0.95
+        }
+      },
+      {
+        "original_prompt": {
+          "text": "explain quantum computing",
+          "user_context": {
+            "apparent_expertise": "beginner",
+            "domain": "education",
+            "language": "en"
+          }
+        },
+        "analysis": {
+          "issues": [
+            {
+              "type": "missing_depth",
+              "details": "No specification of technical level",
+              "impact": "Risk of over/under-explaining"
+            },
+            {
+              "type": "missing_focus",
+              "details": "No specific aspects highlighted",
+              "impact": "Too broad to be useful"
+            },
+            {
+              "type": "missing_format",
+              "details": "No presentation structure specified",
+              "impact": "May not match learning needs"
+            }
+          ],
+          "prompt_pattern": "imperative_educational",
+          "completeness_score": 0.2
+        },
+        "improved_prompt": {
+          "text": "Explain quantum computing at a high school level, focusing on: 1) The basic principle of quantum bits (qubits) compared to classical bits, 2) Superposition and entanglement using simple analogies, and 3) Real-world applications being developed. Include concrete examples and visual analogies where possible. Avoid complex mathematical formulas, but include key terms that a student should know. Structure the explanation in short, digestible paragraphs with clear headings.",
+          "components": {
+            "task_verb": "Explain",
+            "audience_level": "high school",
+            "key_concepts": [
+              "qubits vs classical bits",
+              "superposition",
+              "entanglement",
+              "applications"
+            ],
+            "presentation_style": {
+              "use_analogies": true,
+              "avoid": "complex mathematics",
+              "structure": "short paragraphs with headings"
+            }
+          }
+        },
+        "improvement_rationale": {
+          "additions": [
+            {
+              "element": "audience_level",
+              "purpose": "Target appropriate complexity",
+              "impact": "Ensures understanding"
+            },
+            {
+              "element": "specific_topics",
+              "purpose": "Focus explanation",
+              "impact": "Manageable learning chunks"
+            },
+            {
+              "element": "presentation_guidelines",
+              "purpose": "Structure information",
+              "impact": "Better retention"
+            }
+          ],
+          "completeness_score": 0.9
+        }
+      },
+      {
+        "original_prompt": {
+          "text": "make me a story",
+          "user_context": {
+            "apparent_expertise": "beginner",
+            "domain": "creative_writing",
+            "language": "en"
+          }
+        },
+        "analysis": {
+          "issues": [
+            {
+              "type": "missing_specification",
+              "details": "No genre specified",
+              "impact": "May lead to unfocused or misaligned output"
+            },
+            {
+              "type": "missing_constraint",
+              "details": "No length requirements",
+              "impact": "Risk of over/under-detailed response"
+            },
+            {
+              "type": "missing_style",
+              "details": "No tone or style guidance",
+              "impact": "Inconsistent voice or inappropriate tone"
+            },
+            {
+              "type": "missing_elements",
+              "details": "No character or plot elements provided",
+              "impact": "Generic or unfocused narrative"
+            }
+          ],
+          "prompt_pattern": "imperative_basic",
+          "completeness_score": 0.2
+        },
+        "improved_prompt": {
+          "text": "Write a 500-word fantasy story about a young wizard's first day at magic school. Include at least two characters and focus on their emotional journey. The tone should be light-hearted with moments of humor.",
+          "components": {
+            "task_verb": "Write",
+            "constraints": {
+              "length": "500-word",
+              "genre": "fantasy",
+              "character_count": "at least two",
+              "tone": "light-hearted with moments of humor"
+            },
+            "focus_elements": [
+              "emotional journey",
+              "first day experience"
+            ]
+          }
+        },
+        "improvement_rationale": {
+          "additions": [
+            {
+              "element": "genre_specification",
+              "purpose": "Focus creative direction",
+              "impact": "Reduces ambiguity in story setting and elements"
+            },
+            {
+              "element": "length_constraint",
+              "purpose": "Control detail level",
+              "impact": "Ensures appropriate story development"
+            },
+            {
+              "element": "character_guidance",
+              "purpose": "Define narrative focus",
+              "impact": "Creates clearer character interactions"
+            },
+            {
+              "element": "tone_setting",
+              "purpose": "Guide emotional atmosphere",
+              "impact": "Ensures consistent story mood"
+            }
+          ],
+          "completeness_score": 0.9
+        },
+        "success_metrics": {
+          "clarity_score": 0.95,
+          "specificity_score": 0.85,
+          "constraint_completeness": 0.90,
+          "expected_output_quality": 0.88
+        }
+      }
+    ],
+    "metadata": {
+      "version": "1.0",
+      "prompt_patterns": {
+        "task_specification_verbs": [
+          "Write",
+          "Create",
+          "Generate",
+          "Develop",
+          "Compose",
+          "Design"
+        ],
+        "constraint_markers": [
+          "exactly",
+          "at least",
+          "between",
+          "up to",
+          "maximum",
+          "minimum"
+        ],
+        "format_indicators": [
+          "in JSON format",
+          "as a list",
+          "in markdown",
+          "in table format",
+          "as bullet points"
+        ]
+      },
+      "domain_specific_requirements": {
+        "creative_writing": {
+          "required_elements": [
+            "genre",
+            "length",
+            "tone",
+            "character_specifications"
+          ],
+          "optional_elements": [
+            "plot_elements",
+            "setting_details",
+            "stylistic_preferences"
+          ]
+        },
+        "code_generation": {
+          "required_elements": [
+            "language",
+            "functionality",
+            "input_output_specifications"
+          ],
+          "optional_elements": [
+            "performance_requirements",
+            "coding_style_preferences",
+            "error_handling_specifications"
+          ]
+        },
+        "analysis": {
+          "required_elements": [
+            "data_description",
+            "analysis_objective",
+            "output_format",
+            "statistical_significance_requirements",
+            "data_quality_checks",
+            "assumptions_to_validate"
+          ],
+          "optional_elements": [
+            "statistical_methods",
+            "visualization_preferences",
+            "confidence_levels"
+          ]
+        }
+      },
+      "edge_cases": [
+        {
+          "pattern": "open_ended_requests",
+          "example": "help me write",
+          "special_handling": "require explicit task specification before proceeding"
+        },
+        {
+          "pattern": "complex_multi_part_requests",
+          "example": "make a story and analyze it",
+          "special_handling": "break into separate prompts with clear dependencies"
+        }
+      ]
+    }
+  }
