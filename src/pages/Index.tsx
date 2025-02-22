@@ -20,8 +20,8 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-50/30 flex items-center justify-center p-6">
-      <div className="w-full max-w-md space-y-6 bg-white rounded-2xl p-8 shadow-lg backdrop-blur-sm border border-zinc-200/50">
+    <div className="min-h-[600px] w-[400px] bg-zinc-50/30 flex items-center justify-center p-4">
+      <div className="w-full bg-white rounded-2xl p-6 shadow-lg backdrop-blur-sm border border-zinc-200/50">
         <div className="space-y-2">
           <h2 className="text-2xl font-medium tracking-tight text-zinc-900">
             AI Assistant
@@ -31,7 +31,7 @@ const Index = () => {
           </p>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-4 mt-6">
           <div className="space-y-2">
             <label className="text-sm font-medium text-zinc-700">
               Select Model
@@ -90,4 +90,3 @@ const Index = () => {
 };
 
 export default Index;
-
