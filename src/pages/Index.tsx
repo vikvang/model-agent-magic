@@ -27,12 +27,12 @@ const Index = () => {
 
     try {
       const response = await fetch(
-        "http://localhost:5678/webhook/9efe590c-2792-4468-8094-613c55c7ab89", // MODIFY WITH ACTUAL WEBHOOK URL
+        "https://n8n-fckr.onrender.com/webhook-test/e7e2faca-243b-4782-8192-eb5b54c065b1", // MODIFY WITH ACTUAL WEBHOOK URL
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: "Bearer greg", // JUST FOR LOCAL DEV
+            "Authorization": "Bearer greg", // JUST FOR LOCAL DEV
           },
           body: JSON.stringify({
             sessionId,
