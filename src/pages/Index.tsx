@@ -19,52 +19,50 @@ const Index = () => {
   const [sessionId] = useState(() => crypto.randomUUID());
   const [aiResponse, setAiResponse] = useState("");
 
+  const checkAuthAndUsage = () => {
+    if (!isSignedIn) {
+      return false;
+    }
 
-const checkAuthAndUsage = () => {
-  if (!isSignedIn) {
-    return false;
-  }
+    if (!UsageService.canUseGregify(user)) {
+      alert(
+        "You've reached your daily limit of gregifications! Upgrade to Pro for unlimited access."
+      );
+      return false;
+    }
 
-  if (!UsageService.canUseGregify(user)) {
-    alert(
-      "You've reached your daily limit of gregifications! Upgrade to Pro for unlimited access."
-    );
-    return false;
-  }
+    UsageService.incrementUsage(user.id);
+    return true;
+  };
 
-  UsageService.incrementUsage(user.id);
-  return true;
-};
+  const handleGregify = async () => {
+    // Auth guard
+    if (!checkAuthAndUsage()) {
+      return;
+    }
 
-const handleGregify = async () => {
-  // Auth guard
-  if (!checkAuthAndUsage()) {
-    return;
-  }
+    try {
+      const response = await fetch(
+        "https://n8n-fckr.onrender.com/webhook-test/9efe590c-2792-4468-8094-613c55c7ab89",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Bearer greg",
+          },
+          body: JSON.stringify({
+            sessionId,
+            chatInput: prompt,
+          }),
+        }
+      );
 
-  try {
-    const response = await fetch(
-      "https://n8n-fckr.onrender.com/webhook-test/9efe590c-2792-4468-8094-613c55c7ab89",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: "Bearer greg",
-        },
-        body: JSON.stringify({
-          sessionId,
-          chatInput: prompt,
-        }),
-      }
-    );
-
-    const data = await response.json();
-    setAiResponse(data.output);
-  } catch (error) {
-    console.error("Error sending message:", error);
-    setAiResponse("Error: Failed to get response from AI");
-  }
-};
+      const data = await response.json();
+      setAiResponse(data.output);
+    } catch (error) {
+      console.error("Error sending message:", error);
+      setAiResponse("Error: Failed to get response from AI");
+    }
   };
 
   if (!isSignedIn) {
