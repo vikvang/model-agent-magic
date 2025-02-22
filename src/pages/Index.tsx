@@ -32,7 +32,7 @@ const Index = () => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": "Bearer greg", // JUST FOR LOCAL DEV
+            Authorization: "Bearer greg", // JUST FOR LOCAL DEV
           },
           body: JSON.stringify({
             sessionId,
