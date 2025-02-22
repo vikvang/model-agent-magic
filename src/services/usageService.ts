@@ -1,4 +1,4 @@
-import { User } from "@clerk/clerk-react";
+import type { UserResource } from "@clerk/types";
 
 const STORAGE_KEY = "gregify_usage";
 
@@ -48,7 +48,7 @@ export const UsageService = {
     localStorage.setItem(`${STORAGE_KEY}_${userId}`, JSON.stringify(data));
   },
 
-  canUseGregify: (user: User | null): boolean => {
+  canUseGregify: (user: UserResource | null): boolean => {
     if (!user) return false;
 
     // If user is on paid plan, always return true
@@ -56,6 +56,6 @@ export const UsageService = {
 
     // For free users, check daily limit
     const dailyUsage = UsageService.getDailyUsage(user.id);
-    return dailyUsage < 10;
+    return dailyUsage < 3000;
   },
 };
