@@ -6,5 +6,13 @@
   "action": {
     "default_popup": "index.html"
   },
-  "permissions": []
+  "permissions": [],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' https://cdn.gpteng.co; object-src 'self'"
+  },
+  "background": {
+    "service_worker": "src/background.ts",
+    "type": "module"
+  },
+  "host_permissions": ["https://cdn.gpteng.co/*"]
 }
