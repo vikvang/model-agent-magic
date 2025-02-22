@@ -16,21 +16,55 @@ const Index = () => {
   const [selectedModel, setSelectedModel] = useState("");
   const [selectedAgent, setSelectedAgent] = useState("");
   const [prompt, setPrompt] = useState("");
+  const [sessionId] = useState(() => crypto.randomUUID());
+  const [aiResponse, setAiResponse] = useState("");
 
-  const handleGregify = () => {
-    if (!isSignedIn) {
-      return;
-    }
 
-    if (!UsageService.canUseGregify(user)) {
-      alert(
-        "You've reached your daily limit of gregifications! Upgrade to Pro for unlimited access."
-      );
-      return;
-    }
+const checkAuthAndUsage = () => {
+  if (!isSignedIn) {
+    return false;
+  }
 
-    UsageService.incrementUsage(user.id);
-    console.log("Gregifying with:", { selectedModel, selectedAgent, prompt });
+  if (!UsageService.canUseGregify(user)) {
+    alert(
+      "You've reached your daily limit of gregifications! Upgrade to Pro for unlimited access."
+    );
+    return false;
+  }
+
+  UsageService.incrementUsage(user.id);
+  return true;
+};
+
+const handleGregify = async () => {
+  // Auth guard
+  if (!checkAuthAndUsage()) {
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      "https://n8n-fckr.onrender.com/webhook-test/9efe590c-2792-4468-8094-613c55c7ab89",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer greg",
+        },
+        body: JSON.stringify({
+          sessionId,
+          chatInput: prompt,
+        }),
+      }
+    );
+
+    const data = await response.json();
+    setAiResponse(data.output);
+  } catch (error) {
+    console.error("Error sending message:", error);
+    setAiResponse("Error: Failed to get response from AI");
+  }
+};
   };
 
   if (!isSignedIn) {
@@ -162,6 +196,14 @@ const Index = () => {
           >
             Gregify
           </Button>
+
+          {aiResponse && (
+            <div className="mt-4 p-4 bg-zinc-50 rounded-lg border border-zinc-200">
+              <p className="text-sm text-zinc-700 whitespace-pre-wrap">
+                {aiResponse}
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>
