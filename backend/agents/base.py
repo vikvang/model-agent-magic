@@ -34,7 +34,7 @@ class BaseAgent:
             message = self._prepare_message(prompt, context)
             
             # Start a conversation
-            await self.user_proxy.initiate_chat(
+            self.user_proxy.initiate_chat(
                 self.agent,
                 message=message,
             )
@@ -43,7 +43,7 @@ class BaseAgent:
             last_message = self.user_proxy.last_message()
             
             # Process and structure the response
-            response = self._process_response(last_message)
+            response = self._process_response(last_message["content"] if isinstance(last_message, dict) else last_message)
             
             return {
                 "success": True,
