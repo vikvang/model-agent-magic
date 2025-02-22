@@ -44,36 +44,37 @@ export class ApiService {
         }),
       });
 
-      const agentResult = await agentResponse.json();
+      if (!agentResponse.ok) {
+        throw new Error(`HTTP error! status: ${agentResponse.status}`);
+      }
 
-      // Handle errors from the agent pipeline
+      const agentResult = await agentResponse.json();
+      console.log("Complete agent result:", agentResult);
+
+      // Add detailed validation of the response
+      if (typeof agentResult !== "object") {
+        throw new Error("Invalid response format from agent");
+      }
+
+      if (!("success" in agentResult)) {
+        throw new Error("Missing success field in agent response");
+      }
+
+      // If the agent reports failure, throw the error
       if (!agentResult.success) {
         throw new Error(agentResult.error || "Agent processing failed");
       }
 
-      // Then send to the webhook with the agent-enhanced prompt
-      const webhookResponse = await fetch(
-        `${this.BASE_URL}/${this.API_ENDPOINT}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: "Bearer greg",
-          },
-          body: JSON.stringify({
-            sessionId,
-            chatInput: agentResult.final_prompt,
-          }),
-        }
-      );
+      // Validate messages array
+      if (!Array.isArray(agentResult.messages)) {
+        throw new Error("Invalid messages structure in agent response");
+      }
 
-      const webhookResult = await webhookResponse.json();
-
-      // Return the combined results
+      // Return the processed result
       return {
         success: true,
-        messages: agentResult.messages || [],
-        final_prompt: webhookResult.output || agentResult.message || "",
+        messages: agentResult.messages,
+        final_prompt: agentResult.final_prompt || "",
         error: undefined,
       };
     } catch (error) {

@@ -71,70 +71,77 @@ async def process_prompt(request: PromptRequest) -> PromptResponse:
         refiner = RefinerAgent(request.role)
         evaluator = EvaluatorAgent(request.role)
         
-        # Process through critic
-        critic_result = await critic.process(request.prompt)
-        if not critic_result["success"]:
-            raise Exception(f"Critic agent failed: {critic_result.get('error')}")
-        
-        # Process through refiner with critic's context
-        refiner_result = await refiner.process(
-            request.prompt,
-            context={"critic_analysis": critic_result["metadata"].get("analysis", {})}
-        )
-        if not refiner_result["success"]:
-            raise Exception(f"Refiner agent failed: {refiner_result.get('error')}")
-        
-        # Process through evaluator with full context
-        evaluator_result = await evaluator.process(
-            request.prompt,
-            context={
-                "critic_analysis": critic_result["metadata"].get("analysis", {}),
-                "refinement": refiner_result["metadata"].get("refinement", {})
+        messages = []
+        try:
+            # Process through critic
+            critic_result = await critic.process(request.prompt)
+            print("Critic result:", critic_result)  # Debug log
+            
+            if not critic_result["success"]:
+                raise Exception(f"Critic agent failed: {critic_result.get('error')}")
+            
+            # Create critic message
+            critic_message = {
+                "type": "critic",
+                "content": critic_result["message"],
+                "metadata": critic_result["metadata"]
             }
-        )
-        if not evaluator_result["success"]:
-            raise Exception(f"Evaluator agent failed: {evaluator_result.get('error')}")
-        
-        # Clean up agents
-        critic.terminate()
-        refiner.terminate()
-        evaluator.terminate()
-        
-        # Prepare response
-        messages = [
-            AgentMessage(
-                type="critic",
-                content=critic_result["message"],
-                metadata={
-                    k: v for k, v in critic_result["metadata"].items()
-                    if k not in ["analysis"]  # Exclude internal data
-                }
-            ),
-            AgentMessage(
-                type="refiner",
-                content=refiner_result["message"],
-                metadata={
-                    k: v for k, v in refiner_result["metadata"].items()
-                    if k not in ["refinement"]  # Exclude internal data
-                }
-            ),
-            AgentMessage(
-                type="evaluator",
-                content=evaluator_result["message"],
-                metadata={
-                    k: v for k, v in evaluator_result["metadata"].items()
-                    if k not in ["evaluation"]  # Exclude internal data
+            messages.append(critic_message)
+            
+            # Process through refiner with critic's context
+            refiner_result = await refiner.process(
+                request.prompt,
+                context={"critic_analysis": critic_result["metadata"].get("analysis", {})}
+            )
+            print("Refiner result:", refiner_result)  # Debug log
+            
+            if not refiner_result["success"]:
+                raise Exception(f"Refiner agent failed: {refiner_result.get('error')}")
+            
+            # Create refiner message
+            refiner_message = {
+                "type": "refiner",
+                "content": refiner_result["message"],
+                "metadata": refiner_result["metadata"]
+            }
+            messages.append(refiner_message)
+            
+            # Process through evaluator with full context
+            evaluator_result = await evaluator.process(
+                request.prompt,
+                context={
+                    "critic_analysis": critic_result["metadata"].get("analysis", {}),
+                    "refinement": refiner_result["metadata"].get("refinement", {})
                 }
             )
-        ]
+            print("Evaluator result:", evaluator_result)  # Debug log
+            
+            if not evaluator_result["success"]:
+                raise Exception(f"Evaluator agent failed: {evaluator_result.get('error')}")
+            
+            # Create evaluator message
+            evaluator_message = {
+                "type": "evaluator",
+                "content": evaluator_result["message"],
+                "metadata": evaluator_result["metadata"]
+            }
+            messages.append(evaluator_message)
+            
+        finally:
+            # Clean up agents
+            critic.terminate()
+            refiner.terminate()
+            evaluator.terminate()
         
+        # Return successful response
         return PromptResponse(
             success=True,
             messages=messages,
-            final_prompt=evaluator_result["content"]
+            final_prompt=evaluator_result["message"] if evaluator_result["success"] else ""
         )
         
     except Exception as e:
+        print(f"Error in process_prompt: {str(e)}")  # Debug log
         return PromptResponse(
             success=False,
             messages=[],

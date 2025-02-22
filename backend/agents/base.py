@@ -42,8 +42,32 @@ class BaseAgent:
             # Get the last message from the conversation
             last_message = self.user_proxy.last_message()
             
+            # Add debug logging
+            print(f"Raw AutoGen response for {self.agent_type}: {last_message}")
+            
+            # Handle different response formats
+            if last_message is None:
+                raise Exception(f"No response received from {self.agent_type} agent")
+            
+            # Extract content from AutoGen response
+            if isinstance(last_message, dict):
+                # Handle AutoGen's dictionary response format
+                content = last_message.get('content', '')
+                if not content and 'message' in last_message:
+                    content = last_message['message']
+            else:
+                # Handle string or other response types
+                content = str(last_message)
+            
+            if not content:
+                raise Exception(f"Empty response from {self.agent_type} agent")
+            
             # Process and structure the response
-            response = self._process_response(last_message["content"] if isinstance(last_message, dict) else str(last_message))
+            response = self._process_response(content)
+            
+            if not response.get("content"):
+                print(f"Warning: No content in processed response for {self.agent_type}")
+                response["content"] = f"Processing completed by {self.agent_type}"
             
             return {
                 "success": True,
@@ -53,14 +77,17 @@ class BaseAgent:
                     "suggestions": list(response.get("suggestions", [])),
                     "role": self.role,
                     "agent_type": self.agent_type,
+                    "raw_response": last_message,  # Include raw response for debugging
                     "analysis": response.get("analysis", {}),
                 },
             }
             
         except Exception as e:
+            print(f"Error in {self.agent_type} agent: {str(e)}")
+            print(f"Context: {context}")
             return {
                 "success": False,
-                "error": str(e),
+                "error": f"{self.agent_type} agent error: {str(e)}",
                 "metadata": {
                     "role": self.role,
                     "agent_type": self.agent_type,
