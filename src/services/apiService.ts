@@ -3,7 +3,7 @@ interface GregifyResponse {
 }
 
 export class ApiService {
-  private static BASE_URL = "https://n8n-fckr.onrender.com/webhook-test";
+  private static BASE_URL = "http://localhost:5678/webhook";
   private static API_ENDPOINT = "9efe590c-2792-4468-8094-613c55c7ab89";
 
   static async gregifyPrompt(
