@@ -1,3 +1,6 @@
+import { AgentRole, ModelType } from "@/types/agent";
+import { AgentService } from "./agentService";
+
 interface GregifyResponse {
   output: string;
 }
@@ -9,10 +12,22 @@ export class ApiService {
   static async gregifyPrompt(
     sessionId: string,
     prompt: string,
-    model: string,
-    agent: string
-  ): Promise<string> {
+    model: ModelType,
+    role: AgentRole
+  ): Promise<GregifyResponse> {
     try {
+      // First, process through our agent pipeline
+      const agentMessages = await AgentService.processPrompt(
+        sessionId,
+        prompt,
+        role,
+        model
+      );
+
+      // Get the final evaluated prompt from the last agent
+      const finalMessage = agentMessages[agentMessages.length - 1];
+
+      // Send to webhook with agent-enhanced context
       const response = await fetch(`${this.BASE_URL}/${this.API_ENDPOINT}`, {
         method: "POST",
         headers: {
@@ -21,12 +36,14 @@ export class ApiService {
         },
         body: JSON.stringify({
           sessionId,
-          chatInput: `The selected model is ${model}. The task is to take the given prompt and generate a better prompt. Here's the prompt: ${prompt}`,
+          chatInput: `The selected model is ${model}. The task is to take the given prompt and generate a better prompt. Here's the agent-enhanced context:\n\n${agentMessages
+            .map((msg) => `${msg.type.toUpperCase()}: ${msg.content}`)
+            .join("\n\n")}\n\nOriginal Prompt: ${prompt}`,
+          agentMessages, // Include full agent context
         }),
       });
 
-      const data = (await response.json()) as GregifyResponse;
-      return data.output;
+      return (await response.json()) as GregifyResponse;
     } catch (error) {
       console.error("Error sending message:", error);
       throw new Error("Failed to get response from AI");

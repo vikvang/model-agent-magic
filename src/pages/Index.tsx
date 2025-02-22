@@ -6,14 +6,18 @@ import { UsageService } from "@/services/usageService";
 import { ApiService } from "@/services/apiService";
 import { AuthView } from "@/components/auth/AuthView";
 import { PromptControls } from "@/components/prompt/PromptControls";
+import { AgentMessages } from "@/components/prompt/AgentMessages";
+import { AgentService } from "@/services/agentService";
+import { AgentRole, ModelType } from "@/types/agent";
 
 const Index = () => {
   const { user, isSignedIn } = useUser();
-  const [selectedModel, setSelectedModel] = useState("");
-  const [selectedAgent, setSelectedAgent] = useState("");
+  const [selectedModel, setSelectedModel] = useState<ModelType>("gpt4");
+  const [selectedRole, setSelectedRole] = useState<AgentRole>("webdev");
   const [prompt, setPrompt] = useState("");
   const [sessionId] = useState(() => crypto.randomUUID());
   const [aiResponse, setAiResponse] = useState("");
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const checkAuthAndUsage = () => {
     if (!isSignedIn) return false;
@@ -32,13 +36,24 @@ const Index = () => {
   const handleGregify = async () => {
     if (!checkAuthAndUsage()) return;
 
+    setIsProcessing(true);
     try {
-      const response = await ApiService.gregifyPrompt(sessionId, prompt, selectedModel, selectedAgent);
-      setAiResponse(response);
+      const response = await ApiService.gregifyPrompt(
+        sessionId,
+        prompt,
+        selectedModel,
+        selectedRole
+      );
+      setAiResponse(response.output);
     } catch (error) {
       setAiResponse("Error: Failed to get response from AI");
+    } finally {
+      setIsProcessing(false);
     }
   };
+
+  // Get current agent conversation
+  const agentConversation = AgentService.getConversation(sessionId);
 
   if (!isSignedIn) {
     return (
@@ -56,16 +71,16 @@ const Index = () => {
             Hi, i'm greg
           </h2>
           <p className="text-sm text-zinc-400">
-            your prompts suck, let me make
+            your prompts suck, let me make them better
           </p>
         </div>
 
         <div className="space-y-4 mt-6">
           <PromptControls
             selectedModel={selectedModel}
-            selectedAgent={selectedAgent}
+            selectedRole={selectedRole}
             onModelChange={setSelectedModel}
-            onAgentChange={setSelectedAgent}
+            onRoleChange={setSelectedRole}
           />
 
           <div className="space-y-2">
@@ -82,14 +97,25 @@ const Index = () => {
 
           <Button
             onClick={handleGregify}
-            className="w-full bg-[#FF6B4A] hover:bg-[#FF8266] text-white transition-all duration-200 rounded-xl py-6 text-lg font-medium shadow-lg hover:shadow-xl hover:shadow-[#FF6B4A]/20"
+            disabled={isProcessing}
+            className="w-full bg-[#FF6B4A] hover:bg-[#FF8266] text-white transition-all duration-200 rounded-xl py-6 text-lg font-medium shadow-lg hover:shadow-xl hover:shadow-[#FF6B4A]/20 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Gregify
+            {isProcessing ? "Processing..." : "Gregify"}
           </Button>
 
+          {agentConversation?.messages && (
+            <AgentMessages
+              messages={agentConversation.messages}
+              className="mt-6"
+            />
+          )}
+
           {aiResponse && (
-            <div className="mt-4 p-4 bg-zinc-50 rounded-lg border border-zinc-200">
-              <p className="text-sm text-zinc-700 whitespace-pre-wrap">
+            <div className="mt-4 p-4 bg-[#2C2C30] rounded-lg border border-zinc-700">
+              <h3 className="text-sm font-medium text-zinc-300 mb-2">
+                Final Optimized Prompt
+              </h3>
+              <p className="text-sm text-zinc-300 whitespace-pre-wrap">
                 {aiResponse}
               </p>
             </div>

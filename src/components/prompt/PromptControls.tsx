@@ -5,19 +5,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { AgentRole, ModelType } from "@/types/agent";
 
 interface PromptControlsProps {
-  selectedModel: string;
-  selectedAgent: string;
-  onModelChange: (value: string) => void;
-  onAgentChange: (value: string) => void;
+  selectedModel: ModelType;
+  selectedRole: AgentRole;
+  onModelChange: (value: ModelType) => void;
+  onRoleChange: (value: AgentRole) => void;
 }
 
 export const PromptControls = ({
   selectedModel,
-  selectedAgent,
+  selectedRole,
   onModelChange,
-  onAgentChange,
+  onRoleChange,
 }: PromptControlsProps) => {
   return (
     <>
@@ -53,12 +54,10 @@ export const PromptControls = ({
       </div>
 
       <div className="space-y-2">
-        <label className="text-sm font-medium text-zinc-300">
-          Select Agent
-        </label>
-        <Select onValueChange={onAgentChange} value={selectedAgent}>
+        <label className="text-sm font-medium text-zinc-300">Select Role</label>
+        <Select onValueChange={onRoleChange} value={selectedRole}>
           <SelectTrigger className="w-full bg-[#2C2C30] text-white border-zinc-700 rounded-xl hover:bg-[#3C3C40] transition-colors">
-            <SelectValue placeholder="Choose an agent" />
+            <SelectValue placeholder="Choose a role" />
           </SelectTrigger>
           <SelectContent className="bg-[#2C2C30] border-zinc-700 text-white">
             <SelectItem
