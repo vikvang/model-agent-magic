@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -20,27 +19,27 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-[600px] w-[400px] bg-zinc-50/30 flex items-center justify-center p-4">
-      <div className="w-full bg-white rounded-2xl p-6 shadow-lg backdrop-blur-sm border border-zinc-200/50">
+    <div className="min-h-[600px] w-[400px] bg-zinc-900 flex items-center justify-center p-4">
+      <div className="w-full bg-[#1C1C1F] rounded-3xl p-6 shadow-xl border border-zinc-800">
         <div className="space-y-2">
-          <h2 className="text-2xl font-medium tracking-tight text-zinc-900">
-            AI Assistant
+          <h2 className="text-2xl font-medium tracking-tight text-white">
+            Hi, i'm greg
           </h2>
-          <p className="text-sm text-zinc-500">
-            Configure your AI assistant preferences
+          <p className="text-sm text-zinc-400">
+            your prompts suck, let me make
           </p>
         </div>
 
         <div className="space-y-4 mt-6">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-zinc-700">
+            <label className="text-sm font-medium text-zinc-300">
               Select Model
             </label>
             <Select onValueChange={setSelectedModel} value={selectedModel}>
-              <SelectTrigger className="w-full bg-white border-zinc-200">
+              <SelectTrigger className="w-full bg-[#2C2C30] text-white border-zinc-700 rounded-xl hover:bg-[#3C3C40] transition-colors">
                 <SelectValue placeholder="Choose a model" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-[#2C2C30] border-zinc-700">
                 <SelectItem value="gpt4">GPT-4</SelectItem>
                 <SelectItem value="claude">Claude-3.5</SelectItem>
                 <SelectItem value="gemini">Gemini Pro</SelectItem>
@@ -49,14 +48,14 @@ const Index = () => {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-zinc-700">
+            <label className="text-sm font-medium text-zinc-300">
               Select Agent
             </label>
             <Select onValueChange={setSelectedAgent} value={selectedAgent}>
-              <SelectTrigger className="w-full bg-white border-zinc-200">
+              <SelectTrigger className="w-full bg-[#2C2C30] text-white border-zinc-700 rounded-xl hover:bg-[#3C3C40] transition-colors">
                 <SelectValue placeholder="Choose an agent" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-[#2C2C30] border-zinc-700">
                 <SelectItem value="webdev">Web Developer</SelectItem>
                 <SelectItem value="syseng">System Engineer</SelectItem>
                 <SelectItem value="analyst">Data Analyst</SelectItem>
@@ -66,12 +65,12 @@ const Index = () => {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-zinc-700">
+            <label className="text-sm font-medium text-zinc-300">
               Enter Prompt
             </label>
             <Textarea
               placeholder="Type your prompt here..."
-              className="min-h-[150px] resize-none bg-white border-zinc-200"
+              className="min-h-[150px] resize-none bg-[#2C2C30] text-white border-zinc-700 rounded-xl placeholder-zinc-500 focus:border-zinc-500 hover:bg-[#3C3C40] transition-colors"
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
             />
@@ -79,7 +78,7 @@ const Index = () => {
 
           <Button
             onClick={handleGregify}
-            className="w-full bg-zinc-900 hover:bg-zinc-800 text-white transition-all duration-200 shadow-sm"
+            className="w-full bg-[#FF6B4A] hover:bg-[#FF8266] text-white transition-all duration-200 rounded-xl py-6 text-lg font-medium shadow-lg hover:shadow-xl hover:shadow-[#FF6B4A]/20"
           >
             Gregify
           </Button>
