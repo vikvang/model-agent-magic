@@ -43,16 +43,17 @@ class BaseAgent:
             last_message = self.user_proxy.last_message()
             
             # Process and structure the response
-            response = self._process_response(last_message["content"] if isinstance(last_message, dict) else last_message)
+            response = self._process_response(last_message["content"] if isinstance(last_message, dict) else str(last_message))
             
             return {
                 "success": True,
-                "message": response["content"],
+                "message": str(response.get("content", "")),
                 "metadata": {
-                    "confidence": response.get("confidence", 0.8),
-                    "suggestions": response.get("suggestions", []),
+                    "confidence": float(response.get("confidence", 0.8)),
+                    "suggestions": list(response.get("suggestions", [])),
                     "role": self.role,
                     "agent_type": self.agent_type,
+                    "analysis": response.get("analysis", {}),
                 },
             }
             
