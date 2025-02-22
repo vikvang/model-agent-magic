@@ -27,7 +27,7 @@ const Index = () => {
 
     try {
       const response = await fetch(
-        "https://n8n-fckr.onrender.com/webhook-test/e7e2faca-243b-4782-8192-eb5b54c065b1", // MODIFY WITH ACTUAL WEBHOOK URL
+        "https://n8n-fckr.onrender.com/webhook-test/9efe590c-2792-4468-8094-613c55c7ab89", // MODIFY WITH ACTUAL WEBHOOK URL
         {
           method: "POST",
           headers: {
