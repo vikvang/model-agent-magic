@@ -1,52 +1,53 @@
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
-import { useUser } from "@clerk/clerk-react";
-import { UsageService } from "@/services/usageService";
+// import { useUser } from "@clerk/clerk-react";
+// import { UsageService } from "@/services/usageService";
 import { ApiService } from "@/services/apiService";
-import { AuthView } from "@/components/auth/AuthView";
+// import { AuthView } from "@/components/auth/AuthView";
 import { PromptControls } from "@/components/prompt/PromptControls";
 
 const Index = () => {
-  const { user, isSignedIn } = useUser();
+  // const { user, isSignedIn } = useUser();
   const [selectedModel, setSelectedModel] = useState("");
   const [selectedAgent, setSelectedAgent] = useState("");
   const [prompt, setPrompt] = useState("");
   const [sessionId] = useState(() => crypto.randomUUID());
-  const [aiResponse, setAiResponse] = useState("");
+  const [aiResponse, setAiResponse] = useState({ improvedPrompt: "", restOfResponse: "" });
 
-  const checkAuthAndUsage = () => {
-    if (!isSignedIn) return false;
+  // const checkAuthAndUsage = () => {
+  //   if (!isSignedIn) return false;
 
-    if (!UsageService.canUseGregify(user)) {
-      alert(
-        "You've reached your daily limit of gregifications! Upgrade to Pro for unlimited access."
-      );
-      return false;
-    }
+  //   if (!UsageService.canUseGregify(user)) {
+  //     alert(
+  //       "You've reached your daily limit of gregifications! Upgrade to Pro for unlimited access."
+  //     );
+  //     return false;
+  //   }
 
-    UsageService.incrementUsage(user.id);
-    return true;
-  };
+  //   UsageService.incrementUsage(user.id);
+  //   return true;
+  // };
 
   const handleGregify = async () => {
     // if (!checkAuthAndUsage()) return;
 
     try {
       const response = await ApiService.gregifyPrompt(sessionId, prompt, selectedModel, selectedAgent);
-      setAiResponse(response);
+      const [improvedPrompt, ...restOfResponse] = response.split("\n\n");
+      setAiResponse({ improvedPrompt, restOfResponse: restOfResponse.join("\n\n") });
     } catch (error) {
-      setAiResponse("Error: Failed to get response from AI");
+      setAiResponse({ improvedPrompt: "", restOfResponse: "Error: Failed to get response from AI" });
     }
   };
 
-  if (!isSignedIn) {
-    return (
-      <div className="min-h-[600px] w-[400px] bg-zinc-900 flex items-center justify-center p-4">
-        <AuthView />
-      </div>
-    );
-  }
+  // if (!isSignedIn) {
+  //   return (
+  //     <div className="min-h-[600px] w-[400px] bg-zinc-900 flex items-center justify-center p-4">
+  //       <AuthView />
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className="min-h-[600px] w-[400px] bg-zinc-900 flex items-center justify-center p-4">
@@ -88,10 +89,18 @@ const Index = () => {
           </Button>
 
           {aiResponse && (
-            <div className="mt-4 p-4 bg-zinc-50 rounded-lg border border-zinc-200">
-              <p className="text-sm text-zinc-700 whitespace-pre-wrap">
-                {aiResponse}
-              </p>
+            <div className="mt-4">
+              <div className="p-4 bg-zinc-50 rounded-lg border border-zinc-200 mb-4">
+                <p className="text-sm text-zinc-700 whitespace-pre-wrap">
+                  {aiResponse.improvedPrompt}
+                </p>
+              </div>
+              
+              <div className="p-4 bg-zinc-50 rounded-lg border border-zinc-200">
+                <p className="text-sm text-zinc-700 whitespace-pre-wrap">
+                  {aiResponse.restOfResponse}
+                </p>
+              </div>
             </div>
           )}
         </div>
