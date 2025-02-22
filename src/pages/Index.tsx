@@ -1,4 +1,4 @@
-
+/// <reference types="chrome"/>
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -14,9 +14,39 @@ const Index = () => {
   const [selectedModel, setSelectedModel] = useState("");
   const [selectedAgent, setSelectedAgent] = useState("");
   const [prompt, setPrompt] = useState("");
+  const [sessionId] = useState(() => crypto.randomUUID());
+  const [aiResponse, setAiResponse] = useState("");
 
-  const handleGregify = () => {
-    console.log("Gregifying with:", { selectedModel, selectedAgent, prompt });
+  const handleGregify = async () => {
+    if (chrome?.runtime) {
+      chrome.runtime.sendMessage({
+        type: "GREGIFY",
+        data: { selectedModel, selectedAgent, prompt },
+      });
+    }
+
+    try {
+      const response = await fetch(
+        "http://localhost:5678/webhook/9efe590c-2792-4468-8094-613c55c7ab89", // MODIFY WITH ACTUAL WEBHOOK URL
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Bearer greg", // JUST FOR LOCAL DEV
+          },
+          body: JSON.stringify({
+            sessionId,
+            chatInput: prompt,
+          }),
+        }
+      );
+
+      const data = await response.json();
+      setAiResponse(data.output);
+    } catch (error) {
+      console.error("Error sending message:", error);
+      setAiResponse("Error: Failed to get response from AI");
+    }
   };
 
   return (
@@ -83,6 +113,14 @@ const Index = () => {
           >
             Gregify
           </Button>
+
+          {aiResponse && (
+            <div className="mt-4 p-4 bg-zinc-50 rounded-lg border border-zinc-200">
+              <p className="text-sm text-zinc-700 whitespace-pre-wrap">
+                {aiResponse}
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>
