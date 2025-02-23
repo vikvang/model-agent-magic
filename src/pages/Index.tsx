@@ -104,8 +104,8 @@ const Index = () => {
           {/* Only show response windows if there's content */}
           {aiResponse.improvedPrompt && (
             <div className="mt-4 space-y-4">
-              <div className="p-4 bg-zinc-50 rounded-lg border border-zinc-200">
-                <p className="text-sm text-zinc-700 whitespace-pre-wrap">
+              <div className="p-4 bg-[#2C2C30] rounded-xl border border-zinc-700">
+                <p className="text-sm text-white whitespace-pre-wrap">
                   {aiResponse.improvedPrompt}
                 </p>
               </div>
@@ -128,8 +128,8 @@ const Index = () => {
               </Button>
               
               {aiResponse.restOfResponse && (
-                <div className="p-4 bg-zinc-50 rounded-lg border border-zinc-200">
-                  <p className="text-sm text-zinc-700 whitespace-pre-wrap">
+                <div className="p-4 bg-[#2C2C30] rounded-xl border border-zinc-700">
+                  <p className="text-sm text-white whitespace-pre-wrap">
                     {aiResponse.restOfResponse}
                   </p>
                 </div>
