@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 // import { useUser } from "@clerk/clerk-react";
 // import { UsageService } from "@/services/usageService";
 import { ApiService } from "@/services/apiService";
@@ -16,6 +16,8 @@ const Index = () => {
   const [sessionId] = useState(() => crypto.randomUUID());
   const [aiResponse, setAiResponse] = useState({ improvedPrompt: "", restOfResponse: "" });
   const [copied, setCopied] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
 
   // const checkAuthAndUsage = () => {
   //   if (!isSignedIn) return false;
@@ -31,8 +33,25 @@ const Index = () => {
   //   return true;
   // };
 
+  // Progress bar animation
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isLoading && progress < 99) {
+      interval = setInterval(() => {
+        setProgress(prev => {
+          const increment = Math.random() * 15;
+          const newProgress = prev + increment;
+          return newProgress < 99 ? newProgress : 99;
+        });
+      }, 300);
+    }
+    return () => clearInterval(interval);
+  }, [isLoading, progress]);
+
   const handleGregify = async () => {
-    // if (!checkAuthAndUsage()) return;
+    setIsLoading(true);
+    setProgress(0);
+    setAiResponse({ improvedPrompt: "", restOfResponse: "" });
 
     try {
       const response = await ApiService.gregifyPrompt(sessionId, prompt, selectedModel, selectedAgent);
@@ -41,8 +60,14 @@ const Index = () => {
         improvedPrompt: improvedPrompt.trim(), 
         restOfResponse: restOfResponse.join("\n\n").trim() 
       });
+      setProgress(100);
     } catch (error) {
       setAiResponse({ improvedPrompt: "", restOfResponse: "Error: Failed to get response from AI" });
+    } finally {
+      setTimeout(() => {
+        setIsLoading(false);
+        setProgress(0);
+      }, 500); // Keep 100% visible briefly
     }
   };
 
@@ -96,9 +121,23 @@ const Index = () => {
 
           <Button
             onClick={handleGregify}
-            className="w-full bg-[#FF6B4A] hover:bg-[#FF8266] text-white transition-all duration-200 rounded-xl py-6 text-lg font-medium shadow-lg hover:shadow-xl hover:shadow-[#FF6B4A]/20"
+            disabled={isLoading}
+            className="w-full bg-[#FF6B4A] hover:bg-[#FF8266] text-white transition-all duration-200 rounded-xl py-6 text-lg font-medium shadow-lg hover:shadow-xl hover:shadow-[#FF6B4A]/20 relative overflow-hidden"
           >
-            Gregify
+            <span className={isLoading ? "opacity-0" : "opacity-100"}>
+              Gregify
+            </span>
+            {isLoading && (
+              <>
+                <span className="absolute inset-0 flex items-center justify-center">
+                  {Math.round(progress)}%
+                </span>
+                <div 
+                  className="absolute bottom-0 left-0 h-1 bg-white transition-all duration-300"
+                  style={{ width: `${progress}%` }}
+                />
+              </>
+            )}
           </Button>
 
           {/* Only show response windows if there's content */}
