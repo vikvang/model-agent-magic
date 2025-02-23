@@ -99,7 +99,7 @@ const Index = () => {
         }
       } else {
         // RAG mode
-        const response = await ApiService.gregifyPrompt(sessionId, prompt, selectedModel, selectedAgent);
+        const response = await ApiService.gregifyPromptRAG(sessionId, prompt, selectedModel, selectedRole);
         const [improvedPrompt, ...restOfResponse] = response.split("\n\n");
         setAiResponse({ 
           improvedPrompt: improvedPrompt.trim(), 

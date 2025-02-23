@@ -24,6 +24,10 @@ interface RAGResponse {
   error?: string;
 }
 
+interface GregifyResponse {
+  output: string;
+}
+
 export class ApiService {
   private static BASE_URL = "http://localhost:5678/webhook";
   private static API_ENDPOINT = "9efe590c-2792-4468-8094-613c55c7ab89";
@@ -113,38 +117,23 @@ export class ApiService {
     role: AgentRole
   ): Promise<string> {
     try {
-      console.log("Making RAG request to:", `${this.RAG_URL}/process-prompt`);
-
-      const response = await fetch(`${this.RAG_URL}/process-prompt`, {
+      const response = await fetch(`${this.BASE_URL}/${this.API_ENDPOINT}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Accept: "application/json",
+          Authorization: "Bearer greg",
         },
-        credentials: "include",
         body: JSON.stringify({
           sessionId,
-          prompt,
-          model,
-          role,
+          chatInput: `The selected model is ${model}. The task is to take the given prompt and generate a better prompt. Here's the prompt: ${prompt}`,
         }),
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const result: RAGResponse = await response.json();
-      console.log("RAG result:", result);
-
-      if (!result.success) {
-        throw new Error(result.error || "RAG processing failed");
-      }
-
-      return result.response;
+      const data = (await response.json()) as GregifyResponse;
+      return data.output;
     } catch (error) {
-      console.error("Error in RAG processing:", error);
-      throw error;
+      console.error("Error sending message:", error);
+      throw new Error("Failed to get response from AI");
     }
   }
 }
