@@ -9,7 +9,7 @@ BASE_CONFIG = {
     "seed": 42,
     "temperature": 0.7,
     "config_list": [{
-        "model": "r1-1776",  # change model here
+        "model": "sonar",  # change model here
         "api_key": os.getenv("OPENAI_API_KEY"),
         "base_url": "https://api.perplexity.ai",
         # modify this to use gpt-4 for the agents later

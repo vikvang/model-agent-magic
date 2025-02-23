@@ -70,35 +70,39 @@ Focus on:
                 # If not JSON, try to extract structured information from the text
                 print("Response is not JSON, processing as text")
                 
-                # Look for evaluation scores section
-                if "Scores" in response:
-                    confidence = 0.5  # Default if we can't parse exact scores
-                    suggestions = []
-                    
-                    # Try to extract recommendations
-                    if "Recommendations:" in response:
-                        recommendations_section = response.split("Recommendations:")[1].split("\n")
-                        suggestions = [r.strip().strip('123456789.') for r in recommendations_section if r.strip().startswith(('1', '2', '3', '4', '5', '6', '7', '8', '9'))]
-                    
-                    # Try to extract the final prompt
-                    if "Optimized Prompt:" in response:
-                        content = response.split("Optimized Prompt:")[1].strip()
-                    else:
-                        content = response
-                        
-                    return {
-                        "content": content,
-                        "confidence": confidence,
-                        "suggestions": suggestions,
-                        "analysis": {"raw_text": response}
-                    }
+                # Create a structured analysis even for unstructured text
+                analysis = {
+                    "clarity_score": 0.5,  # Default scores for unstructured responses
+                    "technical_accuracy_score": 0.5,
+                    "role_alignment_score": 0.5,
+                    "issues": [],
+                    "overall_assessment": response
+                }
                 
-                # Fallback for unstructured text
+                # Try to extract recommendations as issues
+                if "Recommendations:" in response:
+                    recommendations_section = response.split("Recommendations:")[1].split("\n")
+                    for r in recommendations_section:
+                        r = r.strip().strip('123456789.')
+                        if r and r[0].isdigit():
+                            analysis["issues"].append({
+                                "type": "clarity",  # Default type
+                                "description": r,
+                                "suggestion": r
+                            })
+                
+                # Calculate confidence from our default scores
+                confidence = (
+                    analysis["clarity_score"] +
+                    analysis["technical_accuracy_score"] +
+                    analysis["role_alignment_score"]
+                ) / 3
+                
                 return {
-                    "content": response,
-                    "confidence": 0.5,
-                    "suggestions": ["Processed as unstructured text"],
-                    "analysis": {"raw_text": response}
+                    "content": analysis["overall_assessment"],
+                    "confidence": confidence,
+                    "suggestions": [issue["suggestion"] for issue in analysis["issues"]],
+                    "analysis": analysis
                 }
                 
         except Exception as e:

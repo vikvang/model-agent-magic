@@ -10,12 +10,39 @@ class RefinerAgent(BaseAgent):
         """Prepare a structured message for the refiner agent."""
         critic_analysis = context.get("critic_analysis", {}) if context else {}
         
+        # Ensure we have a valid analysis structure
+        if not isinstance(critic_analysis, dict):
+            critic_analysis = {
+                "clarity_score": 0.5,
+                "technical_accuracy_score": 0.5,
+                "role_alignment_score": 0.5,
+                "issues": [],
+                "overall_assessment": str(critic_analysis)
+            }
+        
+        # Extract the analysis components we want to use
+        issues = critic_analysis.get("issues", [])
+        overall_assessment = critic_analysis.get("overall_assessment", "No assessment provided")
+        scores = {
+            "clarity": critic_analysis.get("clarity_score", 0.5),
+            "technical": critic_analysis.get("technical_accuracy_score", 0.5),
+            "role": critic_analysis.get("role_alignment_score", 0.5)
+        }
+        
         message = f"""As a {self.role} expert, improve this prompt based on the critic's analysis:
 
 Original Prompt: {prompt}
 
-Critic's Analysis:
-{json.dumps(critic_analysis, indent=2)}
+Critic's Assessment:
+{overall_assessment}
+
+Scores:
+- Clarity: {scores['clarity']:.2f}
+- Technical Accuracy: {scores['technical']:.2f}
+- Role Alignment: {scores['role']:.2f}
+
+Issues to Address:
+{json.dumps(issues, indent=2)}
 
 Provide your refinements in the following JSON format:
 {{

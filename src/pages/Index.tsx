@@ -129,8 +129,13 @@ const Index = () => {
   };
         
   const handleCopy = async () => {
-    // Remove any "Improved Prompt:" text and trim whitespace
-    const cleanPrompt = aiResponse.improvedPrompt.replace(/^Improved Prompt:\s*/i, '').trim();
+    // Get the appropriate text based on mode
+    const textToCopy = mode === "MAS" 
+      ? masResponse 
+      : aiResponse.improvedPrompt;
+      
+    // Remove any "Improved Prompt:" or "Final Optimized Prompt:" text and trim whitespace
+    const cleanPrompt = textToCopy.replace(/^(Improved Prompt:|Final Optimized Prompt:)\s*/i, '').trim();
     await navigator.clipboard.writeText(cleanPrompt);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -214,21 +219,31 @@ const Index = () => {
           {/* MAS Mode Response */}
           {mode === "MAS" && (
             <>
-              {agentConversation?.messages && (
-                <AgentMessages
-                  messages={agentConversation.messages}
-                  className="mt-6"
-                />
-              )}
               {masResponse && (
-                <div className="mt-4 p-4 bg-[#2C2C30] rounded-lg border border-zinc-700">
+                <div className="mt-4 p-4 bg-[#2C2C30] rounded-lg border border-zinc-700 relative group">
                   <h3 className="text-sm font-medium text-zinc-300 mb-2">
                     Final Optimized Prompt
                   </h3>
                   <p className="text-sm text-zinc-300 whitespace-pre-wrap">
                     {masResponse}
                   </p>
+                  <button
+                    onClick={handleCopy}
+                    className="absolute top-3 right-3 text-[#FF6B4A] opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                  >
+                    {copied ? (
+                      <Check className="w-5 h-5" />
+                    ) : (
+                      <Copy className="w-5 h-5" />
+                    )}
+                  </button>
                 </div>
+              )}
+              {agentConversation?.messages && (
+                <AgentMessages
+                  messages={agentConversation.messages}
+                  className="mt-6"
+                />
               )}
             </>
           )}
@@ -236,28 +251,21 @@ const Index = () => {
           {/* RAG Mode Response */}
           {mode === "RAG" && aiResponse.improvedPrompt && (
             <div className="mt-4 space-y-4">
-              <div className="p-4 bg-[#2C2C30] rounded-xl border border-zinc-700">
+              <div className="p-4 bg-[#2C2C30] rounded-xl border border-zinc-700 relative group">
                 <p className="text-sm text-white whitespace-pre-wrap">
                   {aiResponse.improvedPrompt}
                 </p>
-              </div>
-
-              <Button
-                onClick={handleCopy}
-                className="w-full bg-[#FF6B4A] hover:bg-[#FF8266] text-white transition-all duration-200 rounded-xl py-6 text-lg font-medium shadow-lg hover:shadow-xl hover:shadow-[#FF6B4A]/20 flex items-center justify-center gap-2"
-              >
-                {copied ? (
-                  <>
+                <button
+                  onClick={handleCopy}
+                  className="absolute top-3 right-3 text-[#FF6B4A] opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                >
+                  {copied ? (
                     <Check className="w-5 h-5" />
-                    Copied to Clipboard
-                  </>
-                ) : (
-                  <>
+                  ) : (
                     <Copy className="w-5 h-5" />
-                    Copy to Clipboard
-                  </>
-                )}
-              </Button>
+                  )}
+                </button>
+              </div>
 
               {aiResponse.restOfResponse && (
                 <div className="p-4 bg-[#2C2C30] rounded-xl border border-zinc-700">
