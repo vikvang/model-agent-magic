@@ -1,46 +1,61 @@
-# Model Agent Magic
+# Gregify
 
-A Chrome extension that uses a multi-agent system powered by Microsoft AutoGen to improve prompts through specialized agents (Critic, Refiner, and Evaluator).
+A Chrome extension that enhances your prompts using two powerful approaches:
+- **RAG (Retrieval-Augmented Generation)**: Context-aware prompt enhancement
+- **MAS (Multi-Agent System)**: Multi-stage prompt optimization through specialized agents
+
+## Features
+
+### Dual Processing Modes
+
+#### RAG (Retrieval-Augmented Generation)
+RAG mode enhances prompts by incorporating relevant context and knowledge:
+- Analyzes your prompt against a knowledge base of effective prompting patterns
+- Retrieves similar successful prompts and their outcomes
+- Augments your prompt with proven patterns and best practices
+- Provides quick, context-aware improvements
+- Best for: Quick improvements and general prompt enhancement
+
+#### MAS (Multi-Agent System)
+MAS mode uses a collaborative system of specialized AI agents working together:
+1. **Critic Agent**: 
+   - Analyzes prompt structure and potential weaknesses
+   - Identifies areas for improvement
+   - Suggests optimization strategies
+
+2. **Refiner Agent**:
+   - Implements improvements based on Critic's feedback
+   - Enhances clarity and specificity
+   - Adds necessary context and constraints
+
+3. **Evaluator Agent**:
+   - Validates the refined prompt
+   - Ensures all requirements are met
+   - Produces the final optimized version
+- Best for: Deep optimization and professional use cases
+
+### Additional Features
+- **Model Selection**: Choose between different AI models
+- **Role-based Optimization**: Select from specialized roles for targeted improvements
+- **Modern UI**: Clean, intuitive interface with real-time progress tracking
+- **One-click Copy**: Easy copying of improved prompts
 
 ## System Architecture
 
 - **Frontend**: React + Vite Chrome Extension
-- **Backend**: FastAPI + AutoGen Multi-Agent System
-- **Integration**: n8n webhook for final processing
+- **Backend**: FastAPI + n8n Webhook
+- **UI Framework**: Tailwind CSS
+- **State Management**: React Hooks
 
 ## Prerequisites
 
-- Python 3.8+
 - Node.js 16+
 - npm or yarn
-- Perplexity API key (or OpenAI API key if using GPT-4)
 - Chrome browser
 
 ## Setup Instructions
 
-### 1. Backend Setup
-
-```bash
-# Navigate to backend directory
-cd backend
-
-# Create and activate virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Create .env file and add your API key
-echo "OPENAI_API_KEY=your_perplexity_api_key_here" > .env
-
-# Start the backend server
-python main.py
-```
-
-The backend server will run on http://localhost:8000
-
-### 2. Frontend Setup
+### Frontend Setup
 
 ```bash
 # Install dependencies
@@ -53,9 +68,7 @@ npm run dev
 npm run build
 ```
 
-The development server will run on http://localhost:8081
-
-### 3. Chrome Extension Setup
+### Chrome Extension Setup
 
 1. Open Chrome and navigate to `chrome://extensions/`
 2. Enable "Developer mode" in the top right
@@ -63,61 +76,32 @@ The development server will run on http://localhost:8081
 4. Select the `dist` folder created by the build command
 5. The extension should now appear in your Chrome toolbar
 
-## Using the Multi-Agent System
+## Using Gregify
 
-1. Open the extension in your browser
-2. Select a model (e.g., GPT-4, Claude, Gemini)
-3. Choose a role (Web Developer, System Engineer, Data Analyst, or UX Designer)
+1. Click the Gregify extension icon in your Chrome toolbar
+2. Choose your preferred mode (RAG or MAS)
+3. Select a model and role
 4. Enter your prompt
-5. Click "Gregify" to process through the agent pipeline:
-   - Critic Agent analyzes the prompt
-   - Refiner Agent improves it
-   - Evaluator Agent validates and finalizes it
+5. Click "Gregify" to process
+6. Copy the improved prompt with one click
 
-## API Documentation
+## Features in Detail
 
-Access the API documentation at:
+### RAG Mode
+- Quick, context-aware improvements
+- Real-time processing
+- Instant results
 
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
-
-## Configuration
-
-### Changing Models
-
-The system currently uses Perplexity's API. To modify the model:
-
-1. Edit `backend/agents/config.py`
-2. Update the `BASE_CONFIG` section:
-
-```python
-BASE_CONFIG = {
-    "config_list": [{
-        "model": "pplx-7b-chat",  # Change to your preferred model
-        "api_key": os.getenv("OPENAI_API_KEY"),
-        "base_url": "https://api.perplexity.ai",
-    }],
-}
-```
-
-Available Perplexity models:
-
-- `pplx-7b-chat`: Smaller, faster model
-- `pplx-70b-chat`: Larger, more capable model
-- `pplx-online`: Online model with up-to-date knowledge
-- `r1-1776`: Specialized model
-
-## Troubleshooting
-
-1. **CORS Issues**: Ensure the backend is running and CORS is properly configured
-2. **API Key Errors**: Verify your API key in the `.env` file
-3. **Model Errors**: Check model availability and credits in your Perplexity account
+### MAS Mode
+- Multi-stage optimization process
+- Detailed agent feedback
+- More comprehensive improvements
 
 ## Development
 
-- Backend code is in the `backend/` directory
 - Frontend code is in the `src/` directory
-- Agent configurations are in `backend/agents/config.py`
+- Components are in `src/components`
+- Pages are in `src/pages`
 
 ## License
 
