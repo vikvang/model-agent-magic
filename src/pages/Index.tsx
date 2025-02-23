@@ -8,19 +8,29 @@ import { ApiService } from "@/services/apiService";
 import { PromptControls } from "@/components/prompt/PromptControls";
 import { AgentMessages } from "@/components/prompt/AgentMessages";
 import { AgentService } from "@/services/agentService";
-import { AgentRole, ModelType } from "@/types/agent";
+import { AgentRole, ModelType, AgentType } from "@/types/agent";
+import { Switch } from "@/components/ui/switch";
+
+type Mode = "MAS" | "RAG";
 
 const Index = () => {
   // const { user, isSignedIn } = useUser();
+  // Mode selection
+  const [mode, setMode] = useState<Mode>("MAS");
+
+  // Shared state
   const [selectedModel, setSelectedModel] = useState<ModelType>("gpt4");
   const [selectedRole, setSelectedRole] = useState<AgentRole>("webdev");
   const [prompt, setPrompt] = useState("");
   const [sessionId] = useState(() => crypto.randomUUID());
-  const [aiResponse, setAiResponse] = useState({
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  // Mode-specific state
+  const [masResponse, setMasResponse] = useState("");
+  const [ragResponse, setRagResponse] = useState({
     improvedPrompt: "",
     restOfResponse: "",
   });
-  const [isProcessing, setIsProcessing] = useState(false);
 
   // const checkAuthAndUsage = () => {
   //   if (!isSignedIn) return false;
@@ -41,40 +51,81 @@ const Index = () => {
 
     setIsProcessing(true);
     try {
-      // Process through MAS and RAG
-      const response = await ApiService.gregifyPrompt(
-        sessionId,
-        prompt,
-        selectedModel,
-        selectedRole
-      );
+      if (mode === "MAS") {
+        const response = await ApiService.gregifyPrompt(
+          sessionId,
+          prompt,
+          selectedModel,
+          selectedRole
+        );
 
-      if (response.success) {
-        // Split the RAG response into improved prompt and explanation
-        const [improvedPrompt, ...restOfResponse] =
-          response.final_prompt.split("\n\n");
-        setAiResponse({
+        // Transform raw responses into AgentMessage format
+        if (response.messages && response.messages.length > 0) {
+          const transformedMessages = response.messages.map((msg) =>
+            AgentService.transformAgentResponse(msg, msg.type as AgentType)
+          );
+
+          // Find the evaluator's message to get the final prompt
+          const evaluatorMessage = transformedMessages.find(
+            (msg) => msg.type === "evaluator"
+          );
+
+          // Update the agent conversation in the AgentService
+          AgentService.updateConversation(sessionId, {
+            sessionId,
+            messages: transformedMessages,
+            currentState: "complete",
+          });
+
+          // Set the final prompt from the evaluator's content
+          setMasResponse(
+            evaluatorMessage?.content || "No optimized prompt generated"
+          );
+        } else {
+          setMasResponse("No response from agents");
+          AgentService.updateConversation(sessionId, {
+            sessionId,
+            messages: [],
+            currentState: "complete",
+          });
+        }
+      } else {
+        // RAG mode
+        const response = await ApiService.gregifyPromptRAG(
+          sessionId,
+          prompt,
+          selectedModel,
+          selectedRole
+        );
+        const [improvedPrompt, ...restOfResponse] = response.split("\n\n");
+        setRagResponse({
           improvedPrompt: improvedPrompt.trim(),
           restOfResponse: restOfResponse.join("\n\n").trim(),
         });
-      } else {
-        setAiResponse({
-          improvedPrompt: "",
-          restOfResponse: response.error || "Failed to process prompt",
-        });
       }
     } catch (error) {
-      setAiResponse({
-        improvedPrompt: "",
-        restOfResponse: "Error: Failed to get response from AI",
-      });
+      if (mode === "MAS") {
+        setMasResponse("Error: Failed to get response from AI");
+        // Clear the agent conversation on error
+        AgentService.updateConversation(sessionId, {
+          sessionId,
+          messages: [],
+          currentState: "complete",
+        });
+      } else {
+        setRagResponse({
+          improvedPrompt: "",
+          restOfResponse: "Error: Failed to get response from AI",
+        });
+      }
     } finally {
       setIsProcessing(false);
     }
   };
 
-  // Get current agent conversation
-  const agentConversation = AgentService.getConversation(sessionId);
+  // Get current agent conversation for MAS mode
+  const agentConversation =
+    mode === "MAS" ? AgentService.getConversation(sessionId) : null;
 
   // if (!isSignedIn) {
   //   return (
@@ -88,9 +139,19 @@ const Index = () => {
     <div className="min-h-[600px] w-[400px] bg-zinc-900 flex items-center justify-center p-4">
       <div className="w-full bg-[#1C1C1F] rounded-3xl p-6 shadow-xl border border-zinc-800">
         <div className="space-y-2">
-          <h2 className="text-2xl font-medium tracking-tight text-white">
-            Hi, i'm greg
-          </h2>
+          <div className="flex justify-between items-center">
+            <h2 className="text-2xl font-medium tracking-tight text-white">
+              Hi, i'm greg
+            </h2>
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-zinc-400">RAG</span>
+              <Switch
+                checked={mode === "MAS"}
+                onCheckedChange={(checked) => setMode(checked ? "MAS" : "RAG")}
+              />
+              <span className="text-sm text-zinc-400">MAS</span>
+            </div>
+          </div>
           <p className="text-sm text-zinc-400">
             your prompts suck, let me make them better
           </p>
@@ -124,35 +185,47 @@ const Index = () => {
             {isProcessing ? "Processing..." : "Gregify"}
           </Button>
 
-          {/* Show agent conversation messages */}
-          {agentConversation?.messages && (
-            <AgentMessages
-              messages={agentConversation.messages}
-              className="mt-6"
-            />
-          )}
-
-          {/* Show final RAG output */}
-          {(aiResponse.improvedPrompt || aiResponse.restOfResponse) && (
-            <div className="mt-4">
-              {aiResponse.improvedPrompt && (
-                <div className="p-4 bg-[#2C2C30] rounded-lg border border-zinc-700 mb-4">
+          {/* MAS Mode Response */}
+          {mode === "MAS" && (
+            <>
+              {agentConversation?.messages && (
+                <AgentMessages
+                  messages={agentConversation.messages}
+                  className="mt-6"
+                />
+              )}
+              {masResponse && (
+                <div className="mt-4 p-4 bg-[#2C2C30] rounded-lg border border-zinc-700">
                   <h3 className="text-sm font-medium text-zinc-300 mb-2">
                     Final Optimized Prompt
                   </h3>
                   <p className="text-sm text-zinc-300 whitespace-pre-wrap">
-                    {aiResponse.improvedPrompt}
+                    {masResponse}
                   </p>
                 </div>
               )}
+            </>
+          )}
 
-              {aiResponse.restOfResponse && (
+          {/* RAG Mode Response */}
+          {mode === "RAG" && ragResponse.improvedPrompt && (
+            <div className="mt-4">
+              <div className="p-4 bg-[#2C2C30] rounded-lg border border-zinc-700 mb-4">
+                <h3 className="text-sm font-medium text-zinc-300 mb-2">
+                  Improved Prompt
+                </h3>
+                <p className="text-sm text-zinc-300 whitespace-pre-wrap">
+                  {ragResponse.improvedPrompt}
+                </p>
+              </div>
+
+              {ragResponse.restOfResponse && (
                 <div className="p-4 bg-[#2C2C30] rounded-lg border border-zinc-700">
                   <h3 className="text-sm font-medium text-zinc-300 mb-2">
-                    Additional Context
+                    Explanation
                   </h3>
                   <p className="text-sm text-zinc-300 whitespace-pre-wrap">
-                    {aiResponse.restOfResponse}
+                    {ragResponse.restOfResponse}
                   </p>
                 </div>
               )}
