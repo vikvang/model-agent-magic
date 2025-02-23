@@ -1,5 +1,4 @@
-import { User } from "@/types";
-import { FREE_TIER_LIMIT } from "@/constants";
+import type { UserResource } from "@clerk/types";
 
 const STORAGE_KEY = "gregify_usage";
 
@@ -63,7 +62,7 @@ class UsageService {
     localStorage.setItem(this.getStorageKey(userId), JSON.stringify(data));
   }
 
-  canUseGregify(user: User | null): boolean {
+  canUseGregify: (user: UserResource | null): boolean => {
     if (!user) return false;
     if (user.publicMetadata.plan === "paid") return true;
     
@@ -72,4 +71,9 @@ class UsageService {
   }
 }
 
-export const usageService = UsageService.getInstance();
+    // For free users, check daily limit
+    const dailyUsage = UsageService.getDailyUsage(user.id);
+    return dailyUsage < 3000;
+  },
+};
+
