@@ -21,14 +21,37 @@ app.add_middleware(
         "http://localhost:5173",
         "http://localhost:3000",
         "http://localhost:8081",
+        "http://localhost:8080",
         "http://127.0.0.1:8081",
+        "chrome-extension://*",
+        "*",
+        # "chrome-extension://aehjnebcjlbfheinfbkbjkfknpkmfaca", # personal extension id
     ],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["*"],
+    allow_headers=["Content-Type", "Origin", "Accept", "Authorization"],
     expose_headers=["*"],
     max_age=3600,
 )
+
+# Add logging middleware to debug CORS issues
+@app.middleware("http")
+async def log_requests(request, call_next):
+    origin = request.headers.get('origin', '')
+    print(f"Incoming request from origin: {origin}")
+    print(f"Request method: {request.method}")
+    print(f"Request headers: {request.headers}")
+    
+    # For Chrome extensions, we need to ensure the response has the correct CORS headers
+    response = await call_next(request)
+    if origin.startswith('chrome-extension://'):
+        response.headers['Access-Control-Allow-Origin'] = origin
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
+        if request.method == 'OPTIONS':
+            response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Origin, Accept, Authorization'
+    
+    return response
 
 @app.get("/")
 async def root():

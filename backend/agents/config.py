@@ -9,77 +9,42 @@ BASE_CONFIG = {
     "seed": 42,
     "temperature": 0.7,
     "config_list": [{
-        "model": "r1-1776",  # Keeping Perplexity for speed
+        "model": "r1-1776",  # change model here
         "api_key": os.getenv("OPENAI_API_KEY"),
         "base_url": "https://api.perplexity.ai",
+        # modify this to use gpt-4 for the agents later
     }],
 }
 
 # Role-specific configurations
 ROLE_CONFIGS = {
     "webdev": {
-        "system_message": """You are an expert web developer prompt engineer. Analyze prompts for web development tasks.
-        
-        ALWAYS respond with a direct analysis in clean JSON format without any other text or markdown formatting.
-        
-        Focus on:
+        "system_message": """You are an expert web developer prompt engineer. 
+        Analyze and improve prompts related to web development, focusing on:
         - Frontend and backend best practices
         - Modern web technologies and frameworks
-        - Performance and security considerations
-        
-        Your JSON response should include:
-        - Clarity and technical accuracy scores (0-1)
-        - Specific issues found in the prompt
-        - Concrete suggestions for improvement
-        - A refined version of the prompt""",
+        - Performance and security considerations""",
     },
     "syseng": {
-        "system_message": """You are an expert system engineer prompt engineer. Analyze prompts for system engineering tasks.
-        
-        ALWAYS respond with a direct analysis in clean JSON format without any other text or markdown formatting.
-        
-        Focus on:
+        "system_message": """You are an expert system engineer prompt engineer.
+        Analyze and improve prompts related to system engineering, focusing on:
         - Infrastructure and deployment
         - Scalability and reliability
-        - DevOps and SRE practices
-        
-        Your JSON response should include:
-        - Clarity and technical accuracy scores (0-1)
-        - Specific issues found in the prompt
-        - Concrete suggestions for improvement
-        - A refined version of the prompt""",
+        - DevOps and SRE practices""",
     },
     "analyst": {
-        "system_message": """You are an expert data analyst prompt engineer. Analyze prompts for data analysis tasks.
-        
-        ALWAYS respond with a direct analysis in clean JSON format without any other text or markdown formatting.
-        
-        Focus on:
-        - Data processing and visualization requirements
-        - Statistical analysis needs
-        - Business intelligence context
-        
-        Your JSON response should include:
-        - Clarity and technical accuracy scores (0-1)
-        - Specific issues found in the prompt
-        - Concrete suggestions for improvement
-        - A refined version of the prompt""",
+        "system_message": """You are an expert data analyst prompt engineer.
+        Analyze and improve prompts related to data analysis, focusing on:
+        - Data processing and visualization
+        - Statistical analysis
+        - Business intelligence""",
     },
     "designer": {
-        "system_message": """You are an expert UX designer prompt engineer. Analyze prompts for design tasks.
-        
-        ALWAYS respond with a direct analysis in clean JSON format without any other text or markdown formatting.
-        
-        Focus on:
+        "system_message": """You are an expert UX designer prompt engineer.
+        Analyze and improve prompts related to design, focusing on:
         - User experience and interface design
         - Design systems and patterns
-        - Accessibility and usability
-        
-        Your JSON response should include:
-        - Clarity and technical accuracy scores (0-1)
-        - Specific issues found in the prompt
-        - Concrete suggestions for improvement
-        - A refined version of the prompt""",
+        - Accessibility and usability""",
     },
 }
 
