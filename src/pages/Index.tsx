@@ -35,7 +35,10 @@ const Index = () => {
     try {
       const response = await ApiService.gregifyPrompt(sessionId, prompt, selectedModel, selectedAgent);
       const [improvedPrompt, ...restOfResponse] = response.split("\n\n");
-      setAiResponse({ improvedPrompt, restOfResponse: restOfResponse.join("\n\n") });
+      setAiResponse({ 
+        improvedPrompt: improvedPrompt.trim(), 
+        restOfResponse: restOfResponse.join("\n\n").trim() 
+      });
     } catch (error) {
       setAiResponse({ improvedPrompt: "", restOfResponse: "Error: Failed to get response from AI" });
     }
@@ -88,7 +91,8 @@ const Index = () => {
             Gregify
           </Button>
 
-          {aiResponse && (
+          {/* Only show response windows if there's content */}
+          {aiResponse.improvedPrompt && (
             <div className="mt-4">
               <div className="p-4 bg-zinc-50 rounded-lg border border-zinc-200 mb-4">
                 <p className="text-sm text-zinc-700 whitespace-pre-wrap">
@@ -96,11 +100,13 @@ const Index = () => {
                 </p>
               </div>
               
-              <div className="p-4 bg-zinc-50 rounded-lg border border-zinc-200">
-                <p className="text-sm text-zinc-700 whitespace-pre-wrap">
-                  {aiResponse.restOfResponse}
-                </p>
-              </div>
+              {aiResponse.restOfResponse && (
+                <div className="p-4 bg-zinc-50 rounded-lg border border-zinc-200">
+                  <p className="text-sm text-zinc-700 whitespace-pre-wrap">
+                    {aiResponse.restOfResponse}
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </div>
