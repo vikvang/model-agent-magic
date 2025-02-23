@@ -7,10 +7,25 @@ interface UsageData {
   lastResetDate: string;
 }
 
-export const UsageService = {
-  getDailyUsage: (userId: string): number => {
+class UsageService {
+  private static instance: UsageService;
+  
+  private constructor() {}
+
+  static getInstance(): UsageService {
+    if (!UsageService.instance) {
+      UsageService.instance = new UsageService();
+    }
+    return UsageService.instance;
+  }
+
+  private getStorageKey(userId: string): string {
+    return `${STORAGE_KEY}_${userId}`;
+  }
+
+  getDailyUsage(userId: string): number {
     const today = new Date().toDateString();
-    const storage = localStorage.getItem(`${STORAGE_KEY}_${userId}`);
+    const storage = localStorage.getItem(this.getStorageKey(userId));
 
     if (!storage) {
       return 0;
@@ -18,44 +33,47 @@ export const UsageService = {
 
     const data: UsageData = JSON.parse(storage);
     if (data.lastResetDate !== today) {
-      // Reset counter for new day
-      UsageService.resetDailyUsage(userId);
+      this.resetDailyUsage(userId);
       return 0;
     }
 
     return data.dailyCount;
-  },
+  }
 
-  incrementUsage: (userId: string): void => {
+  incrementUsage(userId: string): void {
     const today = new Date().toDateString();
-    const currentUsage = UsageService.getDailyUsage(userId);
+    const currentUsage = this.getDailyUsage(userId);
 
     const data: UsageData = {
       dailyCount: currentUsage + 1,
       lastResetDate: today,
     };
 
-    localStorage.setItem(`${STORAGE_KEY}_${userId}`, JSON.stringify(data));
-  },
+    localStorage.setItem(this.getStorageKey(userId), JSON.stringify(data));
+  }
 
-  resetDailyUsage: (userId: string): void => {
+  resetDailyUsage(userId: string): void {
     const today = new Date().toDateString();
     const data: UsageData = {
       dailyCount: 0,
       lastResetDate: today,
     };
 
-    localStorage.setItem(`${STORAGE_KEY}_${userId}`, JSON.stringify(data));
-  },
+    localStorage.setItem(this.getStorageKey(userId), JSON.stringify(data));
+  }
 
   canUseGregify: (user: UserResource | null): boolean => {
     if (!user) return false;
-
-    // If user is on paid plan, always return true
     if (user.publicMetadata.plan === "paid") return true;
+    
+    const dailyUsage = this.getDailyUsage(user.id);
+    return dailyUsage < FREE_TIER_LIMIT;
+  }
+}
 
     // For free users, check daily limit
     const dailyUsage = UsageService.getDailyUsage(user.id);
     return dailyUsage < 3000;
   },
 };
+
