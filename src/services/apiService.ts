@@ -25,7 +25,7 @@ interface RAGResponse {
 }
 
 export class ApiService {
-  private static BASE_URL = "https://n8n-fckr.onrender.com/webhook-test";
+  private static BASE_URL = "http://localhost:5678/webhook";
   private static API_ENDPOINT = "9efe590c-2792-4468-8094-613c55c7ab89";
   private static AGENT_URL = "http://localhost:8000"; // AutoGen backend
   private static RAG_URL = "http://localhost:8000/rag"; // RAG endpoint
