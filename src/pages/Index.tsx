@@ -159,7 +159,7 @@ const Index = () => {
         <div className="space-y-2">
           <div className="flex justify-between items-center">
             <h2 className="text-2xl font-medium tracking-tight text-white">
-              Hi, i'm greg
+              Hi, I'm Greg
             </h2>
             <div className="flex items-center space-x-2">
               <span className="text-sm text-zinc-400">RAG</span>
@@ -171,7 +171,7 @@ const Index = () => {
             </div>
           </div>
           <p className="text-sm text-zinc-400">
-            your prompts suck, let me make them better
+            Choose between RAG & MAS assistant, then select your model, role & prompt to get started
           </p>
         </div>
 
