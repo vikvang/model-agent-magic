@@ -6,6 +6,7 @@ import { useState } from "react";
 import { ApiService } from "@/services/apiService";
 // import { AuthView } from "@/components/auth/AuthView";
 import { PromptControls } from "@/components/prompt/PromptControls";
+import { Check, Copy } from "lucide-react";
 
 const Index = () => {
   // const { user, isSignedIn } = useUser();
@@ -14,6 +15,7 @@ const Index = () => {
   const [prompt, setPrompt] = useState("");
   const [sessionId] = useState(() => crypto.randomUUID());
   const [aiResponse, setAiResponse] = useState({ improvedPrompt: "", restOfResponse: "" });
+  const [copied, setCopied] = useState(false);
 
   // const checkAuthAndUsage = () => {
   //   if (!isSignedIn) return false;
@@ -42,6 +44,14 @@ const Index = () => {
     } catch (error) {
       setAiResponse({ improvedPrompt: "", restOfResponse: "Error: Failed to get response from AI" });
     }
+  };
+
+  const handleCopy = async () => {
+    // Remove any "Improved Prompt:" text and trim whitespace
+    const cleanPrompt = aiResponse.improvedPrompt.replace(/^Improved Prompt:\s*/i, '').trim();
+    await navigator.clipboard.writeText(cleanPrompt);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   // if (!isSignedIn) {
@@ -93,12 +103,29 @@ const Index = () => {
 
           {/* Only show response windows if there's content */}
           {aiResponse.improvedPrompt && (
-            <div className="mt-4">
-              <div className="p-4 bg-zinc-50 rounded-lg border border-zinc-200 mb-4">
+            <div className="mt-4 space-y-4">
+              <div className="p-4 bg-zinc-50 rounded-lg border border-zinc-200">
                 <p className="text-sm text-zinc-700 whitespace-pre-wrap">
                   {aiResponse.improvedPrompt}
                 </p>
               </div>
+
+              <Button
+                onClick={handleCopy}
+                className="w-full bg-[#FF6B4A] hover:bg-[#FF8266] text-white transition-all duration-200 rounded-xl py-6 text-lg font-medium shadow-lg hover:shadow-xl hover:shadow-[#FF6B4A]/20 flex items-center justify-center gap-2"
+              >
+                {copied ? (
+                  <>
+                    <Check className="w-5 h-5" />
+                    Copied to Clipboard
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-5 h-5" />
+                    Copy to Clipboard
+                  </>
+                )}
+              </Button>
               
               {aiResponse.restOfResponse && (
                 <div className="p-4 bg-zinc-50 rounded-lg border border-zinc-200">
