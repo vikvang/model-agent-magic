@@ -24,6 +24,12 @@ interface RAGResponse {
   error?: string;
 }
 
+interface NormalResponse {
+  success: boolean;
+  response: string;
+  error?: string;
+}
+
 interface GregifyResponse {
   output: string;
 }
@@ -106,6 +112,103 @@ export class ApiService {
             ? error.message
             : "Failed to get response from AI",
       };
+    }
+  }
+
+  // NORMAL mode endpoint
+  static async gregifyPromptNormal(
+    sessionId: string,
+    prompt: string,
+    model: ModelType,
+    role: AgentRole
+  ): Promise<string> {
+    try {
+      // Verify our configuration
+      console.log("AGENT_URL:", this.AGENT_URL);
+      console.log("Making request to:", `${this.AGENT_URL}/normal-prompt`);
+      console.log("Using role:", role, "and model:", model);
+      console.log("Request payload:", { sessionId, prompt, model, role });
+
+      // First test the health endpoint
+      try {
+        console.log("Testing health endpoint...");
+        const healthResponse = await fetch(`${this.AGENT_URL}/health`, {
+          method: "GET",
+          // No credentials or headers needed for a GET request
+        });
+
+        if (!healthResponse.ok) {
+          console.error(
+            `Health check failed with status: ${healthResponse.status}`
+          );
+          const healthText = await healthResponse.text();
+          console.error("Health check error:", healthText);
+        } else {
+          const healthData = await healthResponse.json();
+          console.log("Health check successful:", healthData);
+        }
+      } catch (healthError) {
+        console.error("Health check failed:", healthError);
+      }
+
+      // Now make the actual request
+      console.log("Making normal-prompt request...");
+      const response = await fetch(`${this.AGENT_URL}/normal-prompt`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        // No credentials
+        body: JSON.stringify({
+          sessionId,
+          prompt,
+          model,
+          role,
+        }),
+      });
+
+      console.log("Response status:", response.status);
+      console.log(
+        "Response headers:",
+        Object.fromEntries([...response.headers.entries()])
+      );
+
+      const responseText = await response.text();
+      console.log("Raw response:", responseText);
+
+      // Try to parse the response as JSON
+      let result;
+      try {
+        result = JSON.parse(responseText) as NormalResponse;
+        console.log("Parsed result:", result);
+      } catch (parseError) {
+        console.error("Failed to parse response as JSON:", parseError);
+        throw new Error(`Invalid JSON response: ${responseText}`);
+      }
+
+      console.log("Normal mode result structure:", Object.keys(result));
+      console.log("Result success:", result.success);
+
+      if (!result.success) {
+        console.error("API reported failure:", result.error);
+        throw new Error(result.error || "Normal processing failed");
+      }
+
+      console.log("Success! Response length:", result.response.length);
+      return result.response;
+    } catch (error) {
+      console.error("Error in gregifyPromptNormal:", error);
+      console.error("Error info:", {
+        name: error instanceof Error ? error.name : "Unknown",
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : "No stack available",
+      });
+      throw new Error(
+        `Failed to get response from AI: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
     }
   }
 
