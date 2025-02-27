@@ -28,6 +28,12 @@ interface GregifyResponse {
   output: string;
 }
 
+interface FastPromptResponse {
+  success: boolean;
+  improved_prompt: string;
+  error?: string;
+}
+
 export class ApiService {
   private static BASE_URL = "http://localhost:5678/webhook";
   private static API_ENDPOINT = "9efe590c-2792-4468-8094-613c55c7ab89";
@@ -134,6 +140,76 @@ export class ApiService {
     } catch (error) {
       console.error("Error sending message:", error);
       throw new Error("Failed to get response from AI");
+    }
+  }
+
+  // Fast prompt endpoint - much quicker than the multi-agent system
+  static async fastPromptImprovement(
+    sessionId: string,
+    prompt: string,
+    model: ModelType,
+    role: AgentRole
+  ): Promise<FastPromptResponse> {
+    try {
+      // Log request details
+      console.log(
+        "Making fast prompt request to:",
+        `${this.AGENT_URL}/fast-prompt`
+      );
+
+      // Process through the fast endpoint
+      const response = await fetch(`${this.AGENT_URL}/fast-prompt`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          sessionId,
+          prompt,
+          model,
+          role,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log("Fast prompt result:", result);
+
+      // Validate the response
+      if (typeof result !== "object") {
+        throw new Error("Invalid response format from fast prompt endpoint");
+      }
+
+      if (!("success" in result)) {
+        throw new Error("Missing success field in fast prompt response");
+      }
+
+      // If the processing reports failure, throw the error
+      if (!result.success) {
+        throw new Error(result.error || "Fast prompt processing failed");
+      }
+
+      // Return the processed result
+      return {
+        success: true,
+        improved_prompt: result.improved_prompt || "",
+        error: undefined,
+      };
+    } catch (error) {
+      console.error("Error in fast prompt service:", error);
+      return {
+        success: false,
+        improved_prompt: "",
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to get response from AI",
+      };
     }
   }
 }

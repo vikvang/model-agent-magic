@@ -3,10 +3,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
 import uvicorn
+import openai
+import os
 from agents.critic import CriticAgent
 from agents.refiner import RefinerAgent
 from agents.evaluator import EvaluatorAgent
-from agents.config import ROLE_CONFIGS
+from agents.config import ROLE_CONFIGS, BASE_CONFIG
+
+# Initialize OpenAI client
+openai_api_key = os.getenv("OPENAI_API_KEY")
+client = openai
 
 app = FastAPI(
     title="Prompt Engineering Multi-Agent API",
@@ -169,6 +175,65 @@ async def process_prompt(request: PromptRequest) -> PromptResponse:
             success=False,
             messages=[],
             final_prompt="",
+            error=str(e)
+        )
+
+class FastPromptRequest(BaseModel):
+    prompt: str
+    role: str
+    model: str
+    sessionId: str
+
+class FastPromptResponse(BaseModel):
+    success: bool
+    improved_prompt: str
+    error: Optional[str] = None
+
+@app.post("/fast-prompt")
+async def fast_prompt(request: FastPromptRequest) -> FastPromptResponse:
+    """Quickly improve a prompt without using the full multi-agent system."""
+    try:
+        # Validate role
+        if request.role not in ROLE_CONFIGS:
+            raise HTTPException(status_code=400, detail=f"Invalid role: {request.role}")
+        
+        # Get role-specific context
+        role_context = ROLE_CONFIGS[request.role]["system_message"]
+        
+        # Create a simple prompt for improvement
+        system_message = f"""You are an expert prompt engineer specializing in {request.role} tasks.
+Your job is to quickly improve the user's prompt to be more effective.
+Focus on clarity, specificity, and technical accuracy for {request.role}.
+Provide ONLY the improved prompt with no explanations or additional text."""
+        
+        # Call the API directly for faster response
+        try:
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",  # Using a faster model for quick results
+                messages=[
+                    {"role": "system", "content": system_message},
+                    {"role": "user", "content": f"Improve this prompt: {request.prompt}"}
+                ],
+                temperature=0.7,
+                max_tokens=1024,
+            )
+            
+            improved_prompt = response.choices[0].message.content.strip()
+            
+            return FastPromptResponse(
+                success=True,
+                improved_prompt=improved_prompt
+            )
+            
+        except Exception as api_error:
+            print(f"API error: {str(api_error)}")
+            raise Exception(f"Error calling AI API: {str(api_error)}")
+        
+    except Exception as e:
+        print(f"Error in fast_prompt: {str(e)}")
+        return FastPromptResponse(
+            success=False,
+            improved_prompt="",
             error=str(e)
         )
 

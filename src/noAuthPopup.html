@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Assistant</title>
+    <style>
+      body {
+        width: 320px;
+        padding: 16px;
+        font-family: Arial, sans-serif;
+        background-color: #1e1e2e;
+        color: #cdd6f4;
+      }
+
+      h1 {
+        font-size: 18px;
+        margin-bottom: 16px;
+        text-align: center;
+        color: #89b4fa;
+      }
+
+      .action-button {
+        display: block;
+        width: 100%;
+        padding: 10px;
+        margin: 8px 0;
+        background-color: #89b4fa;
+        color: #1e1e2e;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+        transition: background-color 0.2s;
+      }
+
+      .action-button:hover {
+        background-color: #74c7ec;
+      }
+
+      textarea {
+        width: 100%;
+        height: 100px;
+        padding: 8px;
+        margin: 8px 0;
+        background-color: #313244;
+        color: #cdd6f4;
+        border: 1px solid #45475a;
+        border-radius: 4px;
+        resize: vertical;
+      }
+
+      .status {
+        margin-top: 8px;
+        padding: 8px;
+        background-color: #313244;
+        border-radius: 4px;
+        font-size: 14px;
+      }
+
+      .success {
+        color: #a6e3a1;
+      }
+
+      .error {
+        color: #f38ba8;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>AI Assistant (Simple Mode)</h1>
+
+    <textarea
+      id="prompt-input"
+      placeholder="Enter your prompt here..."
+    ></textarea>
+
+    <button id="inject-button" class="action-button">Inject Prompt</button>
+    <button id="debug-button" class="action-button">Show Debug Info</button>
+
+    <div id="status" class="status" style="display: none"></div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const promptInput = document.getElementById("prompt-input");
+        const injectButton = document.getElementById("inject-button");
+        const debugButton = document.getElementById("debug-button");
+        const statusDiv = document.getElementById("status");
+
+        // Inject the prompt into the active tab
+        injectButton.addEventListener("click", function () {
+          const prompt = promptInput.value.trim();
+
+          if (!prompt) {
+            showStatus("Please enter a prompt first", "error");
+            return;
+          }
+
+          chrome.tabs.query(
+            { active: true, currentWindow: true },
+            function (tabs) {
+              if (!tabs[0]) {
+                showStatus("No active tab found", "error");
+                return;
+              }
+
+              chrome.tabs.sendMessage(
+                tabs[0].id,
+                {
+                  action: "injectPrompt",
+                  prompt: prompt,
+                },
+                function (response) {
+                  if (chrome.runtime.lastError) {
+                    showStatus(
+                      "Error: " + chrome.runtime.lastError.message,
+                      "error"
+                    );
+                    return;
+                  }
+
+                  if (response && response.success) {
+                    showStatus("Prompt injected successfully!", "success");
+                  } else {
+                    showStatus("Failed to inject prompt", "error");
+                  }
+                }
+              );
+            }
+          );
+        });
+
+        // Show debug information
+        debugButton.addEventListener("click", function () {
+          chrome.tabs.query(
+            { active: true, currentWindow: true },
+            function (tabs) {
+              if (!tabs[0]) {
+                showStatus("No active tab found", "error");
+                return;
+              }
+
+              chrome.tabs.sendMessage(
+                tabs[0].id,
+                {
+                  action: "getDebugInfo",
+                },
+                function (response) {
+                  if (chrome.runtime.lastError) {
+                    showStatus(
+                      "Error: " +
+                        chrome.runtime.lastError.message +
+                        " - Content script might not be loaded.",
+                      "error"
+                    );
+                    return;
+                  }
+
+                  if (response) {
+                    showStatus(
+                      "Debug info: " + JSON.stringify(response, null, 2),
+                      "success"
+                    );
+                  } else {
+                    showStatus("No debug info received", "error");
+                  }
+                }
+              );
+            }
+          );
+        });
+
+        // Helper function to show status
+        function showStatus(message, type) {
+          statusDiv.textContent = message;
+          statusDiv.className = "status " + (type || "");
+          statusDiv.style.display = "block";
+
+          // Auto-hide after 5 seconds
+          setTimeout(() => {
+            statusDiv.style.display = "none";
+          }, 5000);
+        }
+      });
+    </script>
+  </body>
+</html>

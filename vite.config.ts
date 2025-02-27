@@ -1,23 +1,32 @@
-
 import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react-swc";
 import path from "path";
-import { componentTagger } from "lovable-tagger";
 
 export default defineConfig(({ mode }) => ({
-  base: "",  // This ensures assets are loaded correctly in the Chrome extension
+  base: "", // This ensures assets are loaded correctly in the Chrome extension
   server: {
     host: "::",
     port: 8080,
   },
-  plugins: [
-    react(),
-    mode === 'development' &&
-    componentTagger(),
-  ].filter(Boolean),
+  plugins: [],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+  },
+  build: {
+    rollupOptions: {
+      input: {
+        basicScript: path.resolve(__dirname, "src/basicScript.js"),
+        simpleBackground: path.resolve(__dirname, "src/simpleBackground.js"),
+      },
+      output: {
+        entryFileNames: (chunkInfo) => {
+          if (chunkInfo.name === "basicScript") return "basicScript.js";
+          if (chunkInfo.name === "simpleBackground") return "background.js";
+          return "assets/[name]-[hash].js";
+        },
+      },
+    },
+    outDir: "dist",
   },
 }));
