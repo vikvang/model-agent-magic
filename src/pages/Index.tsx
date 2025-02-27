@@ -1,10 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useState, useEffect } from "react";
-// import { useUser } from "@clerk/clerk-react";
-// import { UsageService } from "@/services/usageService";
 import { ApiService } from "@/services/apiService";
-// import { AuthView } from "@/components/auth/AuthView";
 import { PromptControls } from "@/components/prompt/PromptControls";
 
 import { AgentMessages } from "@/components/prompt/AgentMessages";
@@ -15,7 +12,6 @@ import { Check, Copy } from "lucide-react";
 type Mode = "MAS" | "RAG";
 
 const Index = () => {
-  // const { user, isSignedIn } = useUser();
   // Mode selection
   const [mode, setMode] = useState<Mode>("MAS");
 
@@ -25,7 +21,10 @@ const Index = () => {
   const [prompt, setPrompt] = useState("");
   const [sessionId] = useState(() => crypto.randomUUID());
   const [isProcessing, setIsProcessing] = useState(false);
-  const [aiResponse, setAiResponse] = useState({ improvedPrompt: "", restOfResponse: "" });
+  const [aiResponse, setAiResponse] = useState({
+    improvedPrompt: "",
+    restOfResponse: "",
+  });
   const [copied, setCopied] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -36,13 +35,13 @@ const Index = () => {
     improvedPrompt: "",
     restOfResponse: "",
   });
-    
+
   // Progress bar animation
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isLoading && progress < 99) {
       interval = setInterval(() => {
-        setProgress(prev => {
+        setProgress((prev) => {
           const increment = Math.random() * 15;
           const newProgress = prev + increment;
           return newProgress < 99 ? newProgress : 99;
@@ -53,7 +52,6 @@ const Index = () => {
   }, [isLoading, progress]);
 
   const handleGregify = async () => {
-    // if (!checkAuthAndUsage()) return;
     setIsLoading(true);
     setProgress(0);
     setAiResponse({ improvedPrompt: "", restOfResponse: "" });
@@ -99,11 +97,16 @@ const Index = () => {
         }
       } else {
         // RAG mode
-        const response = await ApiService.gregifyPromptRAG(sessionId, prompt, selectedModel, selectedRole);
+        const response = await ApiService.gregifyPromptRAG(
+          sessionId,
+          prompt,
+          selectedModel,
+          selectedRole
+        );
         const [improvedPrompt, ...restOfResponse] = response.split("\n\n");
-        setAiResponse({ 
-          improvedPrompt: improvedPrompt.trim(), 
-          restOfResponse: restOfResponse.join("\n\n").trim() 
+        setAiResponse({
+          improvedPrompt: improvedPrompt.trim(),
+          restOfResponse: restOfResponse.join("\n\n").trim(),
         });
         setProgress(100);
       }
@@ -117,7 +120,10 @@ const Index = () => {
           currentState: "complete",
         });
       } else {
-        setAiResponse({ improvedPrompt: "", restOfResponse: "Error: Failed to get response from AI" });
+        setAiResponse({
+          improvedPrompt: "",
+          restOfResponse: "Error: Failed to get response from AI",
+        });
       }
     } finally {
       setIsProcessing(false);
@@ -127,15 +133,15 @@ const Index = () => {
       }, 500); // Keep 100% visible briefly
     }
   };
-        
+
   const handleCopy = async () => {
     // Get the appropriate text based on mode
-    const textToCopy = mode === "MAS" 
-      ? masResponse 
-      : aiResponse.improvedPrompt;
-      
+    const textToCopy = mode === "MAS" ? masResponse : aiResponse.improvedPrompt;
+
     // Remove any "Improved Prompt:" or "Final Optimized Prompt:" text and trim whitespace
-    const cleanPrompt = textToCopy.replace(/^(Improved Prompt:|Final Optimized Prompt:)\s*/i, '').trim();
+    const cleanPrompt = textToCopy
+      .replace(/^(Improved Prompt:|Final Optimized Prompt:)\s*/i, "")
+      .trim();
     await navigator.clipboard.writeText(cleanPrompt);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -144,14 +150,6 @@ const Index = () => {
   // Get current agent conversation for MAS mode
   const agentConversation =
     mode === "MAS" ? AgentService.getConversation(sessionId) : null;
-
-  // if (!isSignedIn) {
-  //   return (
-  //     <div className="min-h-[600px] w-[400px] bg-zinc-900 flex items-center justify-center p-4">
-  //       <AuthView />
-  //     </div>
-  //   );
-  // }
 
   return (
     <div className="min-h-[600px] w-[400px] bg-zinc-900 flex items-center justify-center p-4">
@@ -171,7 +169,8 @@ const Index = () => {
             </div>
           </div>
           <p className="text-sm text-zinc-400">
-            Choose between RAG & MAS assistant, then select your model, role & prompt to get started
+            Choose between RAG & MAS assistant, then select your model, role &
+            prompt to get started
           </p>
         </div>
 
@@ -208,7 +207,7 @@ const Index = () => {
                 <span className="absolute inset-0 flex items-center justify-center">
                   {Math.round(progress)}%
                 </span>
-                <div 
+                <div
                   className="absolute bottom-0 left-0 h-1 bg-white transition-all duration-300"
                   style={{ width: `${progress}%` }}
                 />

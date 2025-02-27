@@ -8,14 +8,11 @@
   },
   "permissions": [],
   "content_security_policy": {
-    "extension_pages": "script-src 'self' 'wasm-unsafe-eval' https://*.clerk.accounts.dev https://cdn.gpteng.co; object-src 'self'"
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval' https://cdn.gpteng.co; object-src 'self'"
   },
   "background": {
     "service_worker": "src/background.ts",
     "type": "module"
   },
-  "host_permissions": [
-    "https://*.clerk.accounts.dev/*",
-    "https://cdn.gpteng.co/*"
-  ]
+  "host_permissions": ["https://cdn.gpteng.co/*"]
 }

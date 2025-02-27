@@ -121,7 +121,6 @@ export class ApiService {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: "Bearer greg",
         },
         body: JSON.stringify({
           sessionId,
