@@ -7,26 +7,61 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Frontend dependencies and build
 node_modules
 dist
 dist-ssr
 *.local
 
-# Python virtual environments
-.venv
+# Python
+# -------------------
+# Virtual environments
+.venv/
 venv/
 env/
 ENV/
+# Environment variables
 .env
-.python-version
+.env.local
+.env.development
+.env.production
+# Byte-compiled / optimized files
 __pycache__/
 *.py[cod]
 *$py.class
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+# Coverage / testing
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+pytest_cache/
+.pytest_cache/
 
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
-.idea
+.idea/
 .DS_Store
 *.suo
 *.ntvs*
