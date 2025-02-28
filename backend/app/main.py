@@ -4,8 +4,10 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 from .api import api_router
+from .api.auth_endpoints import router as auth_router
 from .core.config import settings
 from .utils import app_logger, setup_fastapi_logging
+from .services.supabase_client import supabase_service
 from . import __version__
 
 # Setup logging
@@ -70,8 +72,9 @@ async def log_requests(request: Request, call_next):
     
     return response
 
-# Include the API router
+# Include the API routers
 app.include_router(api_router)
+app.include_router(auth_router, prefix="/auth")
 
 # Validate settings on startup
 @app.on_event("startup")
@@ -79,7 +82,9 @@ async def startup_event():
     """Validate settings on startup."""
     settings.validate()
     app_logger.info(f"Starting {settings.PROJECT_NAME} v{__version__}")
+    app_logger.info(f"Environment: {settings.ENVIRONMENT}")
     app_logger.info(f"API configured: {bool(settings.OPENAI_API_KEY)}")
+    app_logger.info(f"Supabase configured: {supabase_service.is_configured()}")
 
 # Shutdown event
 @app.on_event("shutdown")
