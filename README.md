@@ -33,7 +33,7 @@ RAG mode enhances prompts by incorporating relevant context and knowledge:
 
 MAS mode uses a collaborative system of specialized AI agents working together:
 
-1. **Critic Agent**:
+1. **Critic Agent**: 
 
    - Analyzes prompt structure and potential weaknesses
    - Identifies areas for improvement

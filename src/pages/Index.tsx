@@ -1,14 +1,16 @@
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { ApiService } from "@/services/apiService";
 import { PromptControls } from "@/components/prompt/PromptControls";
+import ReactMarkdown from "react-markdown";
+import { CopyButton } from "@/components/ui/copy-button";
+import { Info, AlertCircle } from "lucide-react";
 
 import { AgentMessages } from "@/components/prompt/AgentMessages";
 import { AgentService } from "@/services/agentService";
 import { AgentRole, ModelType, AgentType, Mode } from "@/types/agent";
 import { Switch } from "@/components/ui/switch";
-import { Check, Copy } from "lucide-react";
 
 const Index = () => {
   // Mode selection
@@ -24,7 +26,6 @@ const Index = () => {
     improvedPrompt: "",
     restOfResponse: "",
   });
-  const [copied, setCopied] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
 
@@ -34,6 +35,15 @@ const Index = () => {
   const [ragResponse, setRagResponse] = useState({
     improvedPrompt: "",
     restOfResponse: "",
+  });
+
+  // State for separated response parts in NORMAL mode
+  const [normalResponseParts, setNormalResponseParts] = useState<{
+    enhancedPrompt: string;
+    explanation: string;
+  }>({
+    enhancedPrompt: "",
+    explanation: "",
   });
 
   // Progress bar animation
@@ -51,10 +61,108 @@ const Index = () => {
     return () => clearInterval(interval);
   }, [isLoading, progress]);
 
+  // Function to parse response text into enhanced prompt and explanation
+  const parseNormalResponse = useCallback((response: string) => {
+    // Try to find the enhanced prompt section first with a specific pattern
+    const enhancedPromptMatch = response.match(
+      /Enhanced prompt:[\s"]*(.+?)["]*(?:\n\n|\n(?=Explanation:|-))/is
+    );
+
+    let enhancedPrompt = "";
+    let explanation = "";
+
+    if (enhancedPromptMatch && enhancedPromptMatch[1]) {
+      enhancedPrompt = enhancedPromptMatch[1].trim();
+
+      // Find start of explanation (after the enhanced prompt)
+      const promptEndIndex =
+        response.indexOf(enhancedPromptMatch[0]) +
+        enhancedPromptMatch[0].length;
+      explanation = response.substring(promptEndIndex).trim();
+    } else {
+      // Fallback: if regex doesn't match, use some heuristics
+      const lines = response.split("\n");
+
+      // Find the first line that contains "Enhanced prompt:"
+      const enhancedPromptLine = lines.findIndex((line) =>
+        line.toLowerCase().includes("enhanced prompt:")
+      );
+
+      if (enhancedPromptLine >= 0) {
+        // Extract everything after "Enhanced prompt:" on this line
+        const promptText = lines[enhancedPromptLine]
+          .replace(/^.*?Enhanced prompt:[\s"]*/i, "")
+          .trim();
+
+        // Look for the next few lines until we find explanation section
+        let endOfPrompt = lines.findIndex(
+          (line, index) =>
+            index > enhancedPromptLine &&
+            (line.toLowerCase().includes("explanation:") || line.match(/^-+$/))
+        );
+
+        if (endOfPrompt === -1) {
+          // If no clear separator, assume the prompt is just this line
+          enhancedPrompt = promptText;
+          explanation = lines
+            .slice(enhancedPromptLine + 1)
+            .join("\n")
+            .trim();
+        } else {
+          // If we found a separator, the prompt might span multiple lines
+          if (promptText) {
+            // If there's text on the same line as "Enhanced prompt:"
+            enhancedPrompt = promptText;
+          } else {
+            // If "Enhanced prompt:" is on its own line, take lines until the separator
+            enhancedPrompt = lines
+              .slice(enhancedPromptLine + 1, endOfPrompt)
+          .join("\n")
+          .trim();
+          }
+        explanation = lines.slice(endOfPrompt).join("\n").trim();
+        }
+      } else {
+        // If we can't find any structure, just return the whole thing as explanation
+        explanation = response;
+      }
+    }
+
+    return { enhancedPrompt, explanation };
+  }, []);
+
+  // Function to send enhanced prompt to ChatGPT
+  const sendToChatGPT = useCallback((enhancedPrompt: string) => {
+    console.log("Sending enhanced prompt to ChatGPT:", enhancedPrompt);
+
+    // Check if chrome runtime is available (we're in a Chrome extension)
+    if (typeof chrome !== "undefined" && chrome.runtime) {
+      chrome.runtime.sendMessage(
+        {
+          action: "enhancedPromptReady",
+          enhancedPrompt,
+        },
+        (response) => {
+          if (chrome.runtime.lastError) {
+            console.error("Error sending message:", chrome.runtime.lastError);
+          } else {
+            console.log("Message sent successfully:", response);
+          }
+        }
+      );
+    } else {
+      console.warn(
+        "Chrome runtime not available, not sending prompt to ChatGPT"
+      );
+    }
+  }, []);
+
   const handleGregify = async () => {
     setIsLoading(true);
     setProgress(0);
     setAiResponse({ improvedPrompt: "", restOfResponse: "" });
+    // Clear normal response parts too
+    setNormalResponseParts({ enhancedPrompt: "", explanation: "" });
     setIsProcessing(true);
     try {
       if (mode === "MAS") {
@@ -110,7 +218,16 @@ const Index = () => {
             response.length
           );
 
+          // Parse the response to separate enhanced prompt and explanation
+          const { enhancedPrompt, explanation } = parseNormalResponse(response);
+          setNormalResponseParts({ enhancedPrompt, explanation });
+
+          // Send the enhanced prompt to ChatGPT if we're in a Chrome extension
+          sendToChatGPT(enhancedPrompt);
+
+          // Set the normal response for display
           setNormalResponse(response);
+
           setProgress(100);
         } catch (error) {
           console.error("Error in NORMAL mode:", error);
@@ -159,30 +276,6 @@ const Index = () => {
         setProgress(0);
       }, 500); // Keep 100% visible briefly
     }
-  };
-
-  const handleCopy = async () => {
-    // Get the appropriate text based on mode
-    let textToCopy = "";
-
-    if (mode === "MAS") {
-      textToCopy = masResponse;
-    } else if (mode === "NORMAL") {
-      textToCopy = normalResponse;
-    } else {
-      textToCopy = aiResponse.improvedPrompt;
-    }
-
-    // Remove any "Improved Prompt:" or "Final Optimized Prompt:" text and trim whitespace
-    const cleanPrompt = textToCopy
-      .replace(
-        /^(Improved Prompt:|Final Optimized Prompt:|Enhanced prompt for.*?role:)\s*/i,
-        ""
-      )
-      .trim();
-    await navigator.clipboard.writeText(cleanPrompt);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
   };
 
   // Get current agent conversation for MAS mode
@@ -288,22 +381,23 @@ const Index = () => {
             <>
               {masResponse && (
                 <div className="mt-4 p-4 bg-[#2C2C30] rounded-lg border border-zinc-700 relative group">
-                  <h3 className="text-sm font-medium text-zinc-300 mb-2">
-                    Final Optimized Prompt
-                  </h3>
-                  <p className="text-sm text-zinc-300 whitespace-pre-wrap">
-                    {masResponse}
-                  </p>
-                  <button
-                    onClick={handleCopy}
-                    className="absolute top-3 right-3 text-[#FF6B4A] opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                  >
-                    {copied ? (
-                      <Check className="w-5 h-5" />
-                    ) : (
-                      <Copy className="w-5 h-5" />
-                    )}
-                  </button>
+                  <div className="flex justify-between items-center mb-3">
+                    <h3 className="text-sm font-medium text-zinc-300">
+                      Final Optimized Prompt
+                    </h3>
+                    <CopyButton
+                      textToCopy={masResponse
+                        .replace(
+                          /^(Improved Prompt:|Final Optimized Prompt:|Enhanced prompt for.*?role:)\s*/i,
+                          ""
+                        )
+                        .trim()}
+                      className="opacity-100 hover:opacity-70"
+                    />
+                  </div>
+                  <div className="text-sm text-zinc-300 prose prose-invert max-w-none">
+                    <ReactMarkdown>{masResponse}</ReactMarkdown>
+                  </div>
                 </div>
               )}
               {agentConversation?.messages && (
@@ -318,25 +412,55 @@ const Index = () => {
           {/* NORMAL Mode Response */}
           {mode === "NORMAL" && (
             <>
-              {normalResponse && (
-                <div className="mt-4 p-4 bg-[#2C2C30] rounded-lg border border-zinc-700 relative group">
-                  <h3 className="text-sm font-medium text-zinc-300 mb-2">
-                    Enhanced Prompt
-                  </h3>
-                  <p className="text-sm text-zinc-300 whitespace-pre-wrap">
-                    {normalResponse}
-                  </p>
-                  <button
-                    onClick={handleCopy}
-                    className="absolute top-3 right-3 text-[#FF6B4A] opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                  >
-                    {copied ? (
-                      <Check className="w-5 h-5" />
-                    ) : (
-                      <Copy className="w-5 h-5" />
-                    )}
-                  </button>
+              {/* Show error message if present */}
+              {normalResponse && normalResponse.startsWith("Error:") ? (
+                <div className="mt-4 p-4 bg-[#2C2C30] rounded-lg border border-red-700 text-red-400">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="w-5 h-5" />
+                    <p className="text-sm">{normalResponse}</p>
+                  </div>
                 </div>
+              ) : (
+                normalResponse && (
+                  <div className="mt-4 space-y-4">
+                    {/* Enhanced Prompt Card */}
+                    <div className="p-4 bg-[#2C2C30] rounded-lg border border-zinc-700 relative group">
+                      <div className="flex justify-between items-center mb-3">
+                        <h3 className="text-sm font-medium text-zinc-300">
+                          Enhanced Prompt
+                        </h3>
+                        <CopyButton
+                          textToCopy={
+                            normalResponseParts.enhancedPrompt || normalResponse
+                          }
+                          className="opacity-100 hover:opacity-70"
+                        />
+                      </div>
+                      <div className="text-sm text-zinc-300 prose prose-invert max-w-none">
+                        <ReactMarkdown>
+                          {normalResponseParts.enhancedPrompt || normalResponse}
+                        </ReactMarkdown>
+                      </div>
+                    </div>
+
+                    {/* Explanation Card - only show if there's explanation content */}
+                    {normalResponseParts.explanation && (
+                      <div className="p-4 bg-[#2C2C30] rounded-lg border border-zinc-700">
+                        <div className="flex items-center gap-2 mb-3">
+                          <Info className="w-4 h-4 text-[#FF6B4A]" />
+                          <h3 className="text-sm font-medium text-zinc-300">
+                            Explanation
+                          </h3>
+                        </div>
+                        <div className="text-sm text-zinc-300 prose prose-invert max-w-none">
+                          <ReactMarkdown>
+                            {normalResponseParts.explanation}
+                          </ReactMarkdown>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
               )}
             </>
           )}
@@ -345,33 +469,39 @@ const Index = () => {
           {mode === "RAG" && (
             <>
               {aiResponse.improvedPrompt && (
-                <div className="mt-4 p-4 bg-[#2C2C30] rounded-lg border border-zinc-700 relative group">
-                  <h3 className="text-sm font-medium text-zinc-300 mb-2">
-                    Improved Prompt
-                  </h3>
-                  <p className="text-sm text-zinc-300 whitespace-pre-wrap">
-                    {aiResponse.improvedPrompt}
-                  </p>
-                  <button
-                    onClick={handleCopy}
-                    className="absolute top-3 right-3 text-[#FF6B4A] opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                  >
-                    {copied ? (
-                      <Check className="w-5 h-5" />
-                    ) : (
-                      <Copy className="w-5 h-5" />
-                    )}
-                  </button>
-                </div>
-              )}
-              {aiResponse.restOfResponse && (
-                <div className="mt-2 p-4 bg-[#2C2C30] rounded-lg border border-zinc-700">
-                  <h3 className="text-sm font-medium text-zinc-300 mb-2">
-                    Explanation
-                  </h3>
-                  <p className="text-sm text-zinc-300 whitespace-pre-wrap">
-                    {aiResponse.restOfResponse}
-                  </p>
+                <div className="mt-4 space-y-4">
+                  {/* Improved Prompt Card */}
+                  <div className="p-4 bg-[#2C2C30] rounded-lg border border-zinc-700 relative group">
+                    <div className="flex justify-between items-center mb-3">
+                      <h3 className="text-sm font-medium text-zinc-300">
+                        Improved Prompt
+                      </h3>
+                      <CopyButton
+                        textToCopy={aiResponse.improvedPrompt}
+                        className="opacity-100 hover:opacity-70"
+                      />
+                    </div>
+                    <div className="text-sm text-zinc-300 prose prose-invert max-w-none">
+                      <ReactMarkdown>{aiResponse.improvedPrompt}</ReactMarkdown>
+                    </div>
+                  </div>
+
+                  {/* Explanation Card */}
+                  {aiResponse.restOfResponse && (
+                    <div className="p-4 bg-[#2C2C30] rounded-lg border border-zinc-700">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Info className="w-4 h-4 text-[#FF6B4A]" />
+                        <h3 className="text-sm font-medium text-zinc-300">
+                          Explanation
+                        </h3>
+                      </div>
+                      <div className="text-sm text-zinc-300 prose prose-invert max-w-none">
+                        <ReactMarkdown>
+                          {aiResponse.restOfResponse}
+                        </ReactMarkdown>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </>
