@@ -1,8 +1,7 @@
-
 {
   "manifest_version": 3,
-  "name": "AI Assistant Extension",
-  "description": "Configure and interact with AI models and agents",
+  "name": "Gregify",
+  "description": "AI-powered prompt enhancement using RAG and Multi-Agent Systems",
   "version": "1.0",
   "action": {
     "default_popup": "index.html",
@@ -11,8 +10,8 @@
   },
   "permissions": [],
   "icons": {
-    "16": "favicon.ico",
-    "48": "favicon.ico",
-    "128": "favicon.ico"
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
   }
 }

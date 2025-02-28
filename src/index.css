@@ -1,7 +1,48 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Add custom styles for the prose content */
+.prose-invert {
+  @apply text-zinc-300;
+}
+
+.prose-invert h1,
+.prose-invert h2,
+.prose-invert h3,
+.prose-invert h4,
+.prose-invert h5,
+.prose-invert h6 {
+  @apply text-white font-medium;
+}
+
+.prose-invert a {
+  @apply text-[#FF6B4A] hover:text-[#FF8266] no-underline;
+}
+
+.prose-invert code {
+  @apply bg-zinc-800 px-1 py-0.5 rounded text-zinc-200;
+}
+
+.prose-invert pre {
+  @apply bg-zinc-800 p-4 rounded overflow-auto;
+}
+
+.prose-invert ul {
+  @apply list-disc pl-5 space-y-1;
+}
+
+.prose-invert ol {
+  @apply list-decimal pl-5 space-y-1;
+}
+
+.prose-invert blockquote {
+  @apply border-l-4 border-zinc-700 pl-4 italic;
+}
+
+.prose-invert strong {
+  @apply text-white;
+}
  
 @layer base {
   :root {
@@ -70,4 +111,3 @@
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
 }
-

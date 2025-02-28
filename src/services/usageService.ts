@@ -1,6 +1,3 @@
-import { User } from "@/types";
-import { FREE_TIER_LIMIT } from "@/constants";
-
 const STORAGE_KEY = "gregify_usage";
 
 interface UsageData {
@@ -8,16 +5,16 @@ interface UsageData {
   lastResetDate: string;
 }
 
-class UsageService {
-  private static instance: UsageService;
-  
+class UsageServiceImpl {
+  private static instance: UsageServiceImpl;
+
   private constructor() {}
 
-  static getInstance(): UsageService {
-    if (!UsageService.instance) {
-      UsageService.instance = new UsageService();
+  static getInstance(): UsageServiceImpl {
+    if (!UsageServiceImpl.instance) {
+      UsageServiceImpl.instance = new UsageServiceImpl();
     }
-    return UsageService.instance;
+    return UsageServiceImpl.instance;
   }
 
   private getStorageKey(userId: string): string {
@@ -63,13 +60,13 @@ class UsageService {
     localStorage.setItem(this.getStorageKey(userId), JSON.stringify(data));
   }
 
-  canUseGregify(user: User | null): boolean {
-    if (!user) return false;
-    if (user.publicMetadata.plan === "paid") return true;
-    
-    const dailyUsage = this.getDailyUsage(user.id);
-    return dailyUsage < FREE_TIER_LIMIT;
+  // Always allow usage without authentication
+  canUseGregify(): boolean {
+    return true;
   }
 }
 
-export const usageService = UsageService.getInstance();
+// For development, we'll allow a high usage limit
+const FREE_TIER_LIMIT = 5;
+
+export const UsageService = UsageServiceImpl.getInstance();
