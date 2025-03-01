@@ -125,7 +125,8 @@ const Index = () => {
       const enhancedPrompt = response.substring(startIndex, endIndex).trim();
       const explanation = response.substring(endIndex).trim();
       
-      return { enhancedPrompt, explanation };
+      // Clean up leading colons and whitespace
+      return cleanupParsedOutput(enhancedPrompt, explanation);
     }
     
     // Second approach: Try to find "Enhanced prompt" section
@@ -134,10 +135,8 @@ const Index = () => {
     
     if (match && match.length >= 3) {
       console.log("Matched full structured format");
-      return {
-        enhancedPrompt: match[1].trim(),
-        explanation: match[2].trim()
-      };
+      // Clean up leading colons and whitespace
+      return cleanupParsedOutput(match[1].trim(), match[2].trim());
     }
     
     // Third approach: Look for keywords and structure
@@ -184,11 +183,27 @@ const Index = () => {
       console.log("Using keyword-based extraction", enhancedStart, enhancedEnd);
       
       const enhancedPrompt = response.substring(enhancedStart, enhancedEnd).trim();
-      const explanation = (explanationMarker !== -1) 
-        ? response.substring(explanationMarker + "explanation".length).replace(/^[:\s]+/, "").trim()
-        : "";
+      let explanation = "";
       
-      return { enhancedPrompt, explanation };
+      if (explanationMarker !== -1) {
+        let explanationStart = explanationMarker + "explanation".length;
+        
+        // Skip over any characters like ":", spaces, quotes for explanation
+        while (explanationStart < response.length && 
+               (response[explanationStart] === ':' || 
+                response[explanationStart] === ' ' || 
+                response[explanationStart] === '"' ||
+                response[explanationStart] === '"' ||
+                response[explanationStart] === '"' ||
+                response[explanationStart] === '\n')) {
+          explanationStart++;
+        }
+        
+        explanation = response.substring(explanationStart).trim();
+      }
+      
+      // Clean up leading colons and whitespace
+      return cleanupParsedOutput(enhancedPrompt, explanation);
     }
     
     // Fallback: Use simple heuristic to find any block of text that looks like a prompt
@@ -200,20 +215,38 @@ const Index = () => {
       // Assume the first substantial paragraph (>20 chars) is the prompt
       for (const para of paragraphs) {
         if (para.trim().length > 20) {
-          return {
-            enhancedPrompt: para.trim(),
-            explanation: response.substring(response.indexOf(para) + para.length).trim()
-          };
+          const enhancedPrompt = para.trim();
+          const explanation = response.substring(response.indexOf(para) + para.length).trim();
+          
+          // Clean up leading colons and whitespace
+          return cleanupParsedOutput(enhancedPrompt, explanation);
         }
       }
     }
     
-    // Last resort - return the whole thing as the prompt
-    return {
-      enhancedPrompt: response,
-      explanation: ""
-    };
+    // Last resort - return the whole thing as the prompt with cleanup
+    return cleanupParsedOutput(response, "");
   }, []);
+  
+  // Helper function to clean up parsed text - remove leading colons and handle whitespace
+  const cleanupParsedOutput = (enhancedPrompt: string, explanation: string) => {
+    // Remove leading colons from enhancedPrompt
+    let cleanPrompt = enhancedPrompt;
+    if (cleanPrompt.startsWith(':')) {
+      cleanPrompt = cleanPrompt.substring(1).trim();
+    }
+    
+    // Remove leading colons from explanation
+    let cleanExplanation = explanation;
+    if (cleanExplanation.startsWith(':')) {
+      cleanExplanation = cleanExplanation.substring(1).trim();
+    }
+    
+    return {
+      enhancedPrompt: cleanPrompt,
+      explanation: cleanExplanation
+    };
+  };
 
   // Function to send enhanced prompt to ChatGPT
   const sendToChatGPT = useCallback((enhancedPrompt: string) => {
@@ -506,3 +539,4 @@ const Index = () => {
 };
 
 export default Index;
+
