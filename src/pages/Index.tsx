@@ -7,6 +7,7 @@ import ReactMarkdown from "react-markdown";
 import { CopyButton } from "@/components/ui/copy-button";
 import { Info, AlertCircle } from "lucide-react";
 import { AgentRole, ModelType } from "@/types/agent";
+import { UserSettings } from "@/components/auth/UserSettings";
 
 const Index = () => {
   // Shared state
@@ -197,6 +198,7 @@ const Index = () => {
             <h2 className="text-2xl font-medium tracking-tight text-white">
               Hi, I'm Greg
             </h2>
+            <UserSettings />
           </div>
           <p className="text-sm text-zinc-400">
             Choose your model, role & prompt to get started

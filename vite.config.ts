@@ -39,7 +39,7 @@ function copyExtensionFiles() {
 }
 
 export default defineConfig(({ mode }) => ({
-  base: "", // This ensures assets are loaded correctly in the Chrome extension
+  base: "./", // Use relative paths for Chrome extension
   server: {
     host: "::",
     port: 8080,
