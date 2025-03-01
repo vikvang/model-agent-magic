@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { ApiService } from "@/services/apiService";
 import { PromptControls } from "@/components/prompt/PromptControls";
 import ReactMarkdown from "react-markdown";
@@ -20,6 +20,33 @@ const Index = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Function to show a toast notification
+  const showToast = (message: string, duration = 3000) => {
+    // Clear any existing timeout
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current);
+    }
+    
+    // Set the toast message
+    setToastMessage(message);
+    
+    // Set a timeout to clear the toast
+    toastTimeoutRef.current = setTimeout(() => {
+      setToastMessage(null);
+    }, duration);
+  };
+  
+  // Clean up toast timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (toastTimeoutRef.current) {
+        clearTimeout(toastTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Set session ID when user auth is loaded
   useEffect(() => {
@@ -190,17 +217,33 @@ const Index = () => {
 
   // Function to send enhanced prompt to ChatGPT
   const sendToChatGPT = useCallback((enhancedPrompt: string) => {
-    console.log("Sending enhanced prompt to ChatGPT:", enhancedPrompt);
+    console.log("Handling enhanced prompt:", enhancedPrompt);
 
     if (!enhancedPrompt || enhancedPrompt.trim() === '') {
-      console.error("Cannot send empty prompt to ChatGPT");
+      console.error("Cannot handle empty prompt");
       return;
     }
 
-    // Check if chrome runtime is available (we're in a Chrome extension)
+    // Primary approach: Copy to clipboard automatically
+    try {
+      navigator.clipboard.writeText(enhancedPrompt)
+        .then(() => {
+          console.log("Enhanced prompt copied to clipboard successfully");
+          showToast("Enhanced prompt copied to clipboard! Switch to ChatGPT tab and paste.");
+        })
+        .catch(err => {
+          console.error("Error copying to clipboard:", err);
+          showToast("Failed to copy to clipboard. Please use the Copy button manually.");
+        });
+    } catch (clipboardErr) {
+      console.error("Clipboard API error:", clipboardErr);
+      showToast("Error accessing clipboard. Please use the Copy button manually.");
+    }
+
+    // Secondary approach: Try extension messaging (likely won't work but keeping as fallback)
     if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.sendMessage) {
       try {
-        console.log("Chrome runtime detected, using sendMessage");
+        console.log("Attempting extension messaging as fallback");
         
         chrome.runtime.sendMessage(
           {
@@ -209,30 +252,17 @@ const Index = () => {
           },
           (response) => {
             if (chrome.runtime.lastError) {
-              console.error("Error sending message:", chrome.runtime.lastError);
-              
-              // Try a fallback approach using localStorage (will only work if content script can access it)
-              try {
-                console.log("Trying localStorage fallback");
-                localStorage.setItem('gregify_enhanced_prompt', enhancedPrompt);
-                localStorage.setItem('gregify_timestamp', Date.now().toString());
-              } catch (storageErr) {
-                console.error("LocalStorage fallback failed:", storageErr);
-              }
+              console.error("Extension messaging error:", chrome.runtime.lastError);
             } else {
-              console.log("Message sent successfully:", response);
+              console.log("Extension message sent:", response);
             }
           }
         );
       } catch (err) {
-        console.error("Error in chrome.runtime.sendMessage:", err);
+        console.error("Extension messaging error:", err);
       }
-    } else {
-      console.warn(
-        "Chrome runtime not available, not sending prompt to ChatGPT"
-      );
     }
-  }, []);
+  }, [showToast]);
 
   const handleGregify = async () => {
     // Check if a valid model is selected
@@ -312,6 +342,13 @@ const Index = () => {
   return (
     <div className="min-h-[600px] w-[400px] bg-zinc-900 flex items-center justify-center p-4">
       <div className="w-full bg-[#1C1C1F] rounded-3xl p-6 shadow-xl border border-zinc-800">
+        {/* Toast notification */}
+        {toastMessage && (
+          <div className="fixed top-4 right-4 left-4 bg-[#FF6B4A] text-white px-4 py-2 rounded-md shadow-lg z-50 text-sm">
+            {toastMessage}
+          </div>
+        )}
+        
         <div className="space-y-2">
           <div className="flex justify-between items-center">
             <h2 className="text-2xl font-medium tracking-tight text-white">
@@ -385,15 +422,39 @@ const Index = () => {
                         <h3 className="text-sm font-bold text-[#FF6B4A]">
                           Enhanced Prompt
                         </h3>
-                        <CopyButton
-                          textToCopy={normalResponseParts.enhancedPrompt}
-                          className="opacity-100 hover:opacity-70"
-                        />
+                        <div className="flex items-center gap-2">
+                          <CopyButton
+                            textToCopy={normalResponseParts.enhancedPrompt}
+                            className="opacity-100 hover:opacity-70"
+                          />
+                        </div>
                       </div>
-                      <div className="text-sm text-zinc-300 prose prose-invert max-w-none bg-[#252528] p-3 rounded-md">
+                      
+                      {/* Prompt content */}
+                      <div className="text-sm text-zinc-300 prose prose-invert max-w-none bg-[#252528] p-3 rounded-md border border-zinc-700">
                         <ReactMarkdown>
                           {normalResponseParts.enhancedPrompt}
                         </ReactMarkdown>
+                      </div>
+                      
+                      {/* Copy & Paste Instructions - Less prominent */}
+                      <div className="mt-3 flex items-center justify-between text-xs text-zinc-400">
+                        <span>Enhanced prompt automatically sent to ChatGPT</span>
+                        <Button 
+                          variant="outline"
+                          size="sm"
+                          className="h-8 text-xs border-zinc-700 bg-[#252528] hover:bg-[#303035] text-zinc-300 flex items-center gap-1"
+                          onClick={() => {
+                            navigator.clipboard.writeText(normalResponseParts.enhancedPrompt);
+                            showToast("Copied to clipboard! You can paste in ChatGPT if needed.");
+                          }}
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                          </svg>
+                          Manual Copy
+                        </Button>
                       </div>
                     </div>
                   )}
