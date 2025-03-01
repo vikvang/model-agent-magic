@@ -8,6 +8,12 @@
 // Determine if we're in production mode
 const isProduction = !window.location.href.includes("localhost");
 
+// Check preferred AI provider
+const getDefaultModel = () => {
+  const preferredProvider = localStorage.getItem("gregify_ai_provider") || "deepseek";
+  return preferredProvider === "openai" ? "gpt4o-mini" : "deepseek";
+};
+
 // Base configuration
 const config = {
   // API endpoints
@@ -39,7 +45,7 @@ const config = {
   // Extension settings
   settings: {
     defaultRole: "webdev",
-    defaultModel: "deepseek",
+    defaultModel: getDefaultModel(),
     availableRoles: ["webdev", "syseng", "analyst", "designer"],
     useMultiAgent: true,
     promptHistory: {
@@ -55,6 +61,7 @@ const config = {
     userProfile: "gregify_user_profile",
     promptHistory: "gregify_prompt_history",
     settings: "gregify_settings",
+    aiProvider: "gregify_ai_provider"
   },
 };
 

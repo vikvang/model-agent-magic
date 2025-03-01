@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import {
   Select,
   SelectContent,
@@ -20,6 +21,23 @@ export const PromptControls = ({
   onModelChange,
   onRoleChange,
 }: PromptControlsProps) => {
+  const [preferredProvider, setPreferredProvider] = useState<string>("deepseek");
+
+  // Load saved AI provider preference on mount and when it changes
+  useEffect(() => {
+    const savedProvider = localStorage.getItem("gregify_ai_provider");
+    if (savedProvider) {
+      setPreferredProvider(savedProvider);
+      
+      // Auto-select the default model for the preferred provider
+      if (savedProvider === "openai" && selectedModel !== "gpt4o-mini") {
+        onModelChange("gpt4o-mini");
+      } else if (savedProvider === "deepseek" && selectedModel !== "deepseek") {
+        onModelChange("deepseek");
+      }
+    }
+  }, [preferredProvider, selectedModel, onModelChange]);
+
   return (
     <>
       <div className="space-y-2">
@@ -31,6 +49,14 @@ export const PromptControls = ({
             <SelectValue placeholder="Choose a model" />
           </SelectTrigger>
           <SelectContent className="bg-[#2C2C30] border-zinc-700 text-white">
+            {preferredProvider === "openai" && (
+              <SelectItem
+                value="gpt4o-mini"
+                className="text-white focus:text-white focus:bg-[#3C3C40]"
+              >
+                GPT-4o mini
+              </SelectItem>
+            )}
             <SelectItem
               value="gpt4"
               className="text-white focus:text-white focus:bg-[#3C3C40]"
@@ -49,12 +75,14 @@ export const PromptControls = ({
             >
               Gemini Pro
             </SelectItem>
-            <SelectItem
-              value="deepseek"
-              className="text-white focus:text-white focus:bg-[#3C3C40]"
-            >
-              DeepSeek Chat
-            </SelectItem>
+            {preferredProvider === "deepseek" && (
+              <SelectItem
+                value="deepseek"
+                className="text-white focus:text-white focus:bg-[#3C3C40]"
+              >
+                DeepSeek Chat
+              </SelectItem>
+            )}
           </SelectContent>
         </Select>
       </div>
