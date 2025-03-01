@@ -56,18 +56,24 @@ export const PromptControls = ({
             // Determine which provider to use based on available API keys
             if (data.openai_api_key) {
               setActiveProvider("openai");
-              // If current model is from an inactive provider, switch to an OpenAI model
-              if (selectedModel === 'deepseek') {
+              
+              // Only switch to OpenAI model if DeepSeek is selected but DeepSeek key is missing
+              if (selectedModel === 'deepseek' && !data.deepseek_api_key) {
+                console.log("Switching from DeepSeek to GPT-4 because DeepSeek API key is missing");
                 onModelChange('gpt4');
               }
+              
               // Store the provider preference
               localStorage.setItem("gregify_ai_provider", "openai");
             } else if (data.deepseek_api_key) {
               setActiveProvider("deepseek");
-              // If current model is from an inactive provider, switch to DeepSeek
-              if (selectedModel === 'gpt4' || selectedModel === 'gpt4o-mini') {
+              
+              // If current model is from OpenAI but OpenAI key is missing, switch to DeepSeek
+              if ((selectedModel === 'gpt4' || selectedModel === 'gpt4o-mini') && !data.openai_api_key) {
+                console.log("Switching to DeepSeek because OpenAI API key is missing");
                 onModelChange('deepseek');
               }
+              
               // Store the provider preference
               localStorage.setItem("gregify_ai_provider", "deepseek");
             } else {

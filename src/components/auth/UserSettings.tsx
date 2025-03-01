@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { User, Lock, Mail, BellRing, ChevronRight, LogOut, Zap, KeyRound, Check, AlertCircle } from "lucide-react";
+import { User, Lock, Mail, BellRing, ChevronRight, LogOut, Zap, KeyRound, Check, AlertCircle, Settings } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Switch } from "@/components/ui/switch";
 import { PersonalInformation } from "./PersonalInformation";
@@ -191,7 +191,7 @@ export const UserSettings = () => {
             textShadow: settingsHovered ? "0 0 8px rgba(255, 255, 255, 0.6)" : "none"
           }}
         >
-          Settings
+          <Settings className="h-5 w-5" />
         </button>
       </DialogTrigger>
       

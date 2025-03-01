@@ -5,7 +5,7 @@ import { ApiService } from "@/services/apiService";
 import { PromptControls } from "@/components/prompt/PromptControls";
 import ReactMarkdown from "react-markdown";
 import { CopyButton } from "@/components/ui/copy-button";
-import { Info, AlertCircle } from "lucide-react";
+import { Info, AlertCircle, Settings } from "lucide-react";
 import { AgentRole, ModelType } from "@/types/agent";
 import { UserSettings } from "@/components/auth/UserSettings";
 import { useAuth } from "@/contexts/AuthContext";
@@ -322,8 +322,10 @@ const Index = () => {
       
       if (selectedModel === "deepseek") {
         aiProvider = "deepseek";
+        console.log("Selected DeepSeek model - setting provider to deepseek");
       } else if (selectedModel === "gpt4" || selectedModel === "gpt4o-mini") {
         aiProvider = "openai";
+        console.log("Selected OpenAI model - setting provider to openai");
       }
       
       // Store the provider for future use
@@ -402,7 +404,7 @@ const Index = () => {
             onRoleChange={setSelectedRole}
           />
 
-          <div className="space-y-2">
+          <div className="space-y-2 relative">
             <label className="text-sm font-medium text-zinc-300">
               Enter Prompt
             </label>
@@ -411,7 +413,20 @@ const Index = () => {
               className="min-h-[150px] resize-none bg-[#2C2C30] text-white border-zinc-700 rounded-xl placeholder-zinc-500 focus:border-zinc-500 hover:bg-[#3C3C40] transition-colors"
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
+              onKeyDown={(e) => {
+                // If Enter is pressed without Shift key, submit the form
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault(); // Prevent default behavior (new line)
+                  if (prompt.trim() && !isLoading) {
+                    handleGregify();
+                  }
+                }
+                // If Shift+Enter is pressed, allow creating a new line (default behavior)
+              }}
             />
+            <span className="absolute bottom-2 right-3 text-xs text-zinc-500">
+              Shift+Enter for new line
+            </span>
           </div>
 
           <Button
