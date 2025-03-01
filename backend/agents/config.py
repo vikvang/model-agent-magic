@@ -2,7 +2,9 @@ import os
 from typing import Dict, Any
 from dotenv import load_dotenv
 
-load_dotenv()
+# Explicitly load from root .env file
+root_env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), '.env')
+load_dotenv(dotenv_path=root_env_path, override=True)
 
 # Base configuration for all agents
 BASE_CONFIG = {

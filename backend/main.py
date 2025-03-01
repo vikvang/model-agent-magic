@@ -14,14 +14,16 @@ from agents.refiner import RefinerAgent
 from agents.evaluator import EvaluatorAgent
 from agents.config import ROLE_CONFIGS, BASE_CONFIG
 
-# Load environment variables
-load_dotenv()
+# Load environment variables from root .env file explicitly
+root_env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '.env')
+print(f"Loading environment variables from: {root_env_path}")
+load_dotenv(dotenv_path=root_env_path, override=True)
 
 # Configure API client for DeepSeek
 deepseek_api_key = os.getenv("DEEPSEEK_API_KEY")
 if not deepseek_api_key:
     print("WARNING: No DeepSeek API key found in environment variables")
-    print("Please ensure you have a .env file with DEEPSEEK_API_KEY set to your DeepSeek API key")
+    print(f"Please ensure your .env file at {root_env_path} has DEEPSEEK_API_KEY set to your DeepSeek API key")
 else:
     print(f"DeepSeek API key loaded successfully: {deepseek_api_key[:5]}... (length: {len(deepseek_api_key)})")
 

@@ -2,8 +2,9 @@ import os
 from typing import Optional
 from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv()
+# Load environment variables from root .env file explicitly
+root_env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))), '.env')
+load_dotenv(dotenv_path=root_env_path, override=True)
 
 class Settings:
     PROJECT_NAME: str = "Gregify API"

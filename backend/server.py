@@ -10,8 +10,10 @@ from dotenv import load_dotenv
 # Add the current directory to the path so that 'app' can be imported
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-# Load environment variables
-load_dotenv()
+# Load environment variables from root .env file explicitly
+root_env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '.env')
+print(f"Loading environment variables from: {root_env_path}")
+load_dotenv(dotenv_path=root_env_path, override=True)
 
 # Get the port from environment variable or use default
 PORT = int(os.getenv("PORT", "8000"))
