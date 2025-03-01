@@ -32,18 +32,26 @@ export const UserSettings = () => {
     console.log("Settings saved:", { isDarkMode, notifications });
   };
 
-  // Generate initials from email
-  const getInitials = () => {
-    if (!user?.email) return "JS";
-    const email = user.email;
-    return email.substring(0, 2).toUpperCase();
+  // Get user's full name from metadata
+  const getUserName = () => {
+    if (user?.user_metadata?.full_name) {
+      return user.user_metadata.full_name;
+    }
+    return "User";
   };
 
-  // Generate display name from email
-  const getDisplayName = () => {
-    if (!user?.email) return "John Smith";
-    const name = user.email.split("@")[0];
-    return name.charAt(0).toUpperCase() + name.slice(1);
+  // Generate initials from name
+  const getInitials = () => {
+    const name = getUserName();
+    if (!name) return "U";
+    
+    const nameParts = name.split(" ");
+    if (nameParts.length > 1) {
+      // Get first letter of first and last name
+      return (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase();
+    }
+    // If only one name, return first two letters
+    return name.substring(0, 2).toUpperCase();
   };
 
   return (
@@ -64,14 +72,14 @@ export const UserSettings = () => {
       <DialogContent className="w-[400px] bg-[#121212] text-white p-0 rounded-xl border-0 shadow-xl">
         <div className="p-6">
           <div className="flex items-center mb-6">
-            <Avatar className="h-14 w-14 bg-[#FF6B4A] text-white mr-4">
-              <AvatarFallback>{getInitials()}</AvatarFallback>
+            <Avatar className="h-14 w-14 bg-[#FF6B4A] text-white mr-4 flex items-center justify-center">
+              <AvatarFallback className="bg-[#FF6B4A] text-white font-semibold">{getInitials()}</AvatarFallback>
             </Avatar>
             <div>
               <h3 className="text-xl font-semibold text-white">
-                {getDisplayName()}
+                {getUserName()}
               </h3>
-              <p className="text-sm text-gray-400">{user?.email || "john.smith@example.com"}</p>
+              <p className="text-sm text-gray-400">{user?.email || "user@example.com"}</p>
             </div>
           </div>
           

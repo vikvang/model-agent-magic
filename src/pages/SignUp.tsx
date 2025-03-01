@@ -7,6 +7,7 @@ import { AlertCircle } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 
 const SignUp = () => {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -19,7 +20,7 @@ const SignUp = () => {
     setError("");
 
     // Validate inputs
-    if (!email || !password || !confirmPassword) {
+    if (!name || !email || !password || !confirmPassword) {
       setError("All fields are required");
       return;
     }
@@ -40,6 +41,11 @@ const SignUp = () => {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          data: {
+            full_name: name,
+          },
+        },
       });
 
       if (error) throw error;
@@ -78,6 +84,20 @@ const SignUp = () => {
               </div>
             </div>
           )}
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-zinc-300">
+              Full Name
+            </label>
+            <Input
+              type="text"
+              placeholder="John Smith"
+              className="bg-[#2C2C30] text-white border-zinc-700 rounded-xl placeholder-zinc-500 focus:border-zinc-500 hover:bg-[#3C3C40] transition-colors"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
+          </div>
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-zinc-300">
