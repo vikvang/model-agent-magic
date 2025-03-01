@@ -40,8 +40,9 @@ develop-eggs/
 downloads/
 eggs/
 .eggs/
-lib/
-!src/lib/  # Exception for src/lib directory
+/lib/
+!src/lib/
+!src/lib/**
 lib64/
 parts/
 sdist/
