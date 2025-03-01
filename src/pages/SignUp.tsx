@@ -11,6 +11,8 @@ const SignUp = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [openAIKey, setOpenAIKey] = useState("");
+  const [deepSeekKey, setDeepSeekKey] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
@@ -21,7 +23,13 @@ const SignUp = () => {
 
     // Validate inputs
     if (!name || !email || !password || !confirmPassword) {
-      setError("All fields are required");
+      setError("Name, email and password fields are required");
+      return;
+    }
+
+    // Validate at least one API key is provided
+    if (!openAIKey && !deepSeekKey) {
+      setError("At least one API key (OpenAI or DeepSeek) is required");
       return;
     }
 
@@ -38,7 +46,8 @@ const SignUp = () => {
     setIsLoading(true);
 
     try {
-      const { data, error } = await supabase.auth.signUp({
+      // Sign up the user
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -48,12 +57,32 @@ const SignUp = () => {
         },
       });
 
-      if (error) throw error;
+      if (authError) throw authError;
 
-      // If successful, navigate to login or home page
-      if (data) {
-        navigate("/login");
+      // If successful, store API keys in the user_api_keys table
+      if (authData.user) {
+        // The issue is that the user record might not be fully created in the database yet
+        // We need to directly link to the auth.users table instead of public.users
+        
+        // First, we'll check if the user_api_keys table is properly using auth.uid()
+        const { error: apiKeyError } = await supabase
+          .from('user_api_keys')
+          .insert([
+            { 
+              user_id: authData.user.id,
+              openai_api_key: openAIKey || null,
+              deepseek_api_key: deepSeekKey || null
+            }
+          ]);
+
+        if (apiKeyError) {
+          console.error("API key error:", apiKeyError);
+          throw new Error(`Error storing API keys: ${apiKeyError.message}`);
+        }
       }
+
+      // If successful, navigate to login
+      navigate("/login");
     } catch (err: any) {
       setError(err.message || "An error occurred during sign up");
     } finally {
@@ -139,6 +168,38 @@ const SignUp = () => {
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
             />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-zinc-300">
+              OpenAI API Key (Optional)
+            </label>
+            <Input
+              type="password"
+              placeholder="sk-..."
+              className="bg-[#2C2C30] text-white border-zinc-700 rounded-xl placeholder-zinc-500 focus:border-zinc-500 hover:bg-[#3C3C40] transition-colors"
+              value={openAIKey}
+              onChange={(e) => setOpenAIKey(e.target.value)}
+            />
+            <p className="text-xs text-zinc-500">Enables GPT-4 and other OpenAI models</p>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-zinc-300">
+              DeepSeek API Key (Optional)
+            </label>
+            <Input
+              type="password"
+              placeholder="sk-..."
+              className="bg-[#2C2C30] text-white border-zinc-700 rounded-xl placeholder-zinc-500 focus:border-zinc-500 hover:bg-[#3C3C40] transition-colors"
+              value={deepSeekKey}
+              onChange={(e) => setDeepSeekKey(e.target.value)}
+            />
+            <p className="text-xs text-zinc-500">Enables DeepSeek Chat models</p>
+          </div>
+
+          <div className="bg-[#2C2C30] p-3 rounded-lg border border-amber-700 text-amber-400">
+            <p className="text-xs">At least one API key (OpenAI or DeepSeek) is required to use the application.</p>
           </div>
 
           <Button

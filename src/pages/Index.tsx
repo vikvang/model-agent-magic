@@ -8,16 +8,26 @@ import { CopyButton } from "@/components/ui/copy-button";
 import { Info, AlertCircle } from "lucide-react";
 import { AgentRole, ModelType } from "@/types/agent";
 import { UserSettings } from "@/components/auth/UserSettings";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Index = () => {
+  const { user } = useAuth();
   // Shared state
   const [selectedModel, setSelectedModel] = useState<ModelType>("gpt4");
   const [selectedRole, setSelectedRole] = useState<AgentRole>("webdev");
   const [prompt, setPrompt] = useState("");
-  const [sessionId] = useState(() => crypto.randomUUID());
+  const [sessionId, setSessionId] = useState<string>("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
+
+  // Set session ID when user auth is loaded
+  useEffect(() => {
+    if (user?.id) {
+      setSessionId(user.id);
+      console.log("Using authenticated user ID for session:", user.id);
+    }
+  }, [user]);
 
   // Normal mode state
   const [normalResponse, setNormalResponse] = useState("");
@@ -48,93 +58,175 @@ const Index = () => {
 
   // Function to parse response text into enhanced prompt and explanation
   const parseNormalResponse = useCallback((response: string) => {
-    // Try to find the enhanced prompt section first with a specific pattern
-    const enhancedPromptMatch = response.match(
-      /Enhanced prompt:[\s"]*(.+?)["]*(?:\n\n|\n(?=Explanation:|-))/is
-    );
-
-    let enhancedPrompt = "";
-    let explanation = "";
-
-    if (enhancedPromptMatch && enhancedPromptMatch[1]) {
-      enhancedPrompt = enhancedPromptMatch[1].trim();
-
-      // Find start of explanation (after the enhanced prompt)
-      const promptEndIndex =
-        response.indexOf(enhancedPromptMatch[0]) +
-        enhancedPromptMatch[0].length;
-      explanation = response.substring(promptEndIndex).trim();
-    } else {
-      // Fallback: if regex doesn't match, use some heuristics
-      const lines = response.split("\n");
-
-      // Find the first line that contains "Enhanced prompt:"
-      const enhancedPromptLine = lines.findIndex((line) =>
-        line.toLowerCase().includes("enhanced prompt:")
-      );
-
-      if (enhancedPromptLine >= 0) {
-        // Extract everything after "Enhanced prompt:" on this line
-        const promptText = lines[enhancedPromptLine]
-          .replace(/^.*?Enhanced prompt:[\s"]*/i, "")
-          .trim();
-
-        // Look for the next few lines until we find explanation section
-        let endOfPrompt = lines.findIndex(
-          (line, index) =>
-            index > enhancedPromptLine &&
-            (line.toLowerCase().includes("explanation:") || line.match(/^-+$/))
-        );
-
-        if (endOfPrompt === -1) {
-          // If no clear separator, assume the prompt is just this line
-          enhancedPrompt = promptText;
-          explanation = lines
-            .slice(enhancedPromptLine + 1)
-            .join("\n")
-            .trim();
-        } else {
-          // If we found a separator, the prompt might span multiple lines
-          if (promptText) {
-            // If there's text on the same line as "Enhanced prompt:"
-            enhancedPrompt = promptText;
-          } else {
-            // If "Enhanced prompt:" is on its own line, take lines until the separator
-            enhancedPrompt = lines
-              .slice(enhancedPromptLine + 1, endOfPrompt)
-              .join("\n")
-              .trim();
-          }
-          explanation = lines.slice(endOfPrompt).join("\n").trim();
+    console.log("Parsing response:", response);
+    
+    // Check if the response is empty or undefined
+    if (!response || response.trim() === '') {
+      console.error("Empty response received");
+      return { enhancedPrompt: "", explanation: "" };
+    }
+    
+    // First approach: Try to find "Improved Prompt" section (sometimes the model uses this instead)
+    const improvedPromptIndex = response.toLowerCase().indexOf("improved prompt");
+    if (improvedPromptIndex !== -1) {
+      console.log("Found 'Improved Prompt' section");
+      // Extract from "Improved Prompt" to the next major section
+      let startIndex = improvedPromptIndex + "improved prompt".length;
+      
+      // Skip over formatting characters
+      while (startIndex < response.length && 
+             (response[startIndex] === ':' || 
+              response[startIndex] === ' ' || 
+              response[startIndex] === '"' ||
+              response[startIndex] === '"' ||
+              response[startIndex] === '"' ||
+              response[startIndex] === '\n')) {
+        startIndex++;
+      }
+      
+      // Find the end of the improved prompt section
+      const nextSectionMarkers = ["explanation:", "--", "===", "***"];
+      let endIndex = response.length;
+      
+      for (const marker of nextSectionMarkers) {
+        const markerIndex = response.toLowerCase().indexOf(marker, startIndex);
+        if (markerIndex !== -1 && markerIndex < endIndex) {
+          endIndex = markerIndex;
         }
+      }
+      
+      const enhancedPrompt = response.substring(startIndex, endIndex).trim();
+      const explanation = response.substring(endIndex).trim();
+      
+      return { enhancedPrompt, explanation };
+    }
+    
+    // Second approach: Try to find "Enhanced prompt" section
+    const fullRegexPattern = /(?:Enhanced prompt(?:\s*|:\s*|["""]?\s*))([^]*?)(?:(?:\n\n|\r\n\r\n)(?:Explanation(?:\s*|:\s*)|(?:-{3,}))([^]*))/i;
+    const match = response.match(fullRegexPattern);
+    
+    if (match && match.length >= 3) {
+      console.log("Matched full structured format");
+      return {
+        enhancedPrompt: match[1].trim(),
+        explanation: match[2].trim()
+      };
+    }
+    
+    // Third approach: Look for keywords and structure
+    const enhancedPromptMarker = response.toLowerCase().indexOf("enhanced prompt");
+    const explanationMarker = response.toLowerCase().indexOf("explanation");
+    
+    if (enhancedPromptMarker !== -1) {
+      let enhancedStart = enhancedPromptMarker + "enhanced prompt".length;
+      
+      // Skip over any characters like ":", spaces, quotes
+      while (enhancedStart < response.length && 
+             (response[enhancedStart] === ':' || 
+              response[enhancedStart] === ' ' || 
+              response[enhancedStart] === '"' ||
+              response[enhancedStart] === '"' ||
+              response[enhancedStart] === '"' ||
+              response[enhancedStart] === '\n')) {
+        enhancedStart++;
+      }
+      
+      let enhancedEnd;
+      if (explanationMarker !== -1 && explanationMarker > enhancedPromptMarker) {
+        // If we found "Explanation", look for the start of that section
+        enhancedEnd = explanationMarker;
+        
+        // Find the start of the line containing "Explanation"
+        let lineStart = enhancedEnd;
+        while (lineStart > 0 && response[lineStart - 1] !== '\n') {
+          lineStart--;
+        }
+        
+        enhancedEnd = lineStart;
       } else {
-        // If we can't find any structure, just return the whole thing as explanation
-        explanation = response;
+        // If no explanation marker, look for separator lines like "---"
+        const separatorMatch = response.substring(enhancedStart).match(/\n(-{3,}|\*{3,}|\_{3,})\n/);
+        if (separatorMatch) {
+          enhancedEnd = enhancedStart + separatorMatch.index;
+        } else {
+          // If no separator found, assume the entire rest is the prompt
+          enhancedEnd = response.length;
+        }
+      }
+      
+      console.log("Using keyword-based extraction", enhancedStart, enhancedEnd);
+      
+      const enhancedPrompt = response.substring(enhancedStart, enhancedEnd).trim();
+      const explanation = (explanationMarker !== -1) 
+        ? response.substring(explanationMarker + "explanation".length).replace(/^[:\s]+/, "").trim()
+        : "";
+      
+      return { enhancedPrompt, explanation };
+    }
+    
+    // Fallback: Use simple heuristic to find any block of text that looks like a prompt
+    console.log("No structured format detected, using fallback heuristic");
+    
+    // Split by double newlines to find paragraphs
+    const paragraphs = response.split(/\n\n+/);
+    if (paragraphs.length > 1) {
+      // Assume the first substantial paragraph (>20 chars) is the prompt
+      for (const para of paragraphs) {
+        if (para.trim().length > 20) {
+          return {
+            enhancedPrompt: para.trim(),
+            explanation: response.substring(response.indexOf(para) + para.length).trim()
+          };
+        }
       }
     }
-
-    return { enhancedPrompt, explanation };
+    
+    // Last resort - return the whole thing as the prompt
+    return {
+      enhancedPrompt: response,
+      explanation: ""
+    };
   }, []);
 
   // Function to send enhanced prompt to ChatGPT
   const sendToChatGPT = useCallback((enhancedPrompt: string) => {
     console.log("Sending enhanced prompt to ChatGPT:", enhancedPrompt);
 
+    if (!enhancedPrompt || enhancedPrompt.trim() === '') {
+      console.error("Cannot send empty prompt to ChatGPT");
+      return;
+    }
+
     // Check if chrome runtime is available (we're in a Chrome extension)
-    if (typeof chrome !== "undefined" && chrome.runtime) {
-      chrome.runtime.sendMessage(
-        {
-          action: "enhancedPromptReady",
-          enhancedPrompt,
-        },
-        (response) => {
-          if (chrome.runtime.lastError) {
-            console.error("Error sending message:", chrome.runtime.lastError);
-          } else {
-            console.log("Message sent successfully:", response);
+    if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.sendMessage) {
+      try {
+        console.log("Chrome runtime detected, using sendMessage");
+        
+        chrome.runtime.sendMessage(
+          {
+            action: "enhancedPromptReady",
+            enhancedPrompt,
+          },
+          (response) => {
+            if (chrome.runtime.lastError) {
+              console.error("Error sending message:", chrome.runtime.lastError);
+              
+              // Try a fallback approach using localStorage (will only work if content script can access it)
+              try {
+                console.log("Trying localStorage fallback");
+                localStorage.setItem('gregify_enhanced_prompt', enhancedPrompt);
+                localStorage.setItem('gregify_timestamp', Date.now().toString());
+              } catch (storageErr) {
+                console.error("LocalStorage fallback failed:", storageErr);
+              }
+            } else {
+              console.log("Message sent successfully:", response);
+            }
           }
-        }
-      );
+        );
+      } catch (err) {
+        console.error("Error in chrome.runtime.sendMessage:", err);
+      }
     } else {
       console.warn(
         "Chrome runtime not available, not sending prompt to ChatGPT"
@@ -143,6 +235,18 @@ const Index = () => {
   }, []);
 
   const handleGregify = async () => {
+    // Check if a valid model is selected
+    if (selectedModel === 'none') {
+      setNormalResponse("Error: No API keys available. Please add your API keys in your profile settings to use the application.");
+      return;
+    }
+    
+    // Check if we have a valid user ID
+    if (!sessionId) {
+      setNormalResponse("Error: You must be logged in to use this feature. Please log in and try again.");
+      return;
+    }
+    
     setIsLoading(true);
     setProgress(0);
     // Clear normal response parts
@@ -150,9 +254,19 @@ const Index = () => {
     setIsProcessing(true);
     
     try {
-      // Get the preferred AI provider from localStorage
-      const aiProvider = localStorage.getItem("gregify_ai_provider") || "deepseek";
-      console.log(`Using AI Provider: ${aiProvider}`);
+      // Determine the appropriate AI provider based on selected model
+      let aiProvider = "openai"; // Default
+      
+      if (selectedModel === "deepseek") {
+        aiProvider = "deepseek";
+      } else if (selectedModel === "gpt4" || selectedModel === "gpt4o-mini") {
+        aiProvider = "openai";
+      }
+      
+      // Store the provider for future use
+      localStorage.setItem("gregify_ai_provider", aiProvider);
+      console.log(`Using AI Provider: ${aiProvider} for model: ${selectedModel}`);
+      console.log(`Using session ID (user ID): ${sessionId}`);
       
       // NORMAL mode
       console.log("Starting NORMAL mode request...");
@@ -265,24 +379,44 @@ const Index = () => {
               normalResponse && (
                 <div className="mt-4 space-y-4">
                   {/* Enhanced Prompt Card */}
-                  <div className="p-4 bg-[#2C2C30] rounded-lg border border-zinc-700 relative group">
-                    <div className="flex justify-between items-center mb-3">
-                      <h3 className="text-sm font-medium text-zinc-300">
-                        Enhanced Prompt
-                      </h3>
-                      <CopyButton
-                        textToCopy={
-                          normalResponseParts.enhancedPrompt || normalResponse
-                        }
-                        className="opacity-100 hover:opacity-70"
-                      />
+                  {normalResponseParts.enhancedPrompt && (
+                    <div className="p-4 bg-[#2C2C30] rounded-lg border-2 border-[#FF6B4A] relative group">
+                      <div className="flex justify-between items-center mb-3">
+                        <h3 className="text-sm font-bold text-[#FF6B4A]">
+                          Enhanced Prompt
+                        </h3>
+                        <CopyButton
+                          textToCopy={normalResponseParts.enhancedPrompt}
+                          className="opacity-100 hover:opacity-70"
+                        />
+                      </div>
+                      <div className="text-sm text-zinc-300 prose prose-invert max-w-none bg-[#252528] p-3 rounded-md">
+                        <ReactMarkdown>
+                          {normalResponseParts.enhancedPrompt}
+                        </ReactMarkdown>
+                      </div>
                     </div>
-                    <div className="text-sm text-zinc-300 prose prose-invert max-w-none">
-                      <ReactMarkdown>
-                        {normalResponseParts.enhancedPrompt || normalResponse}
-                      </ReactMarkdown>
+                  )}
+
+                  {/* If we have no structured response, show the raw response */}
+                  {!normalResponseParts.enhancedPrompt && !normalResponseParts.explanation && (
+                    <div className="p-4 bg-[#2C2C30] rounded-lg border border-zinc-700 relative group">
+                      <div className="flex justify-between items-center mb-3">
+                        <h3 className="text-sm font-medium text-zinc-300">
+                          Response
+                        </h3>
+                        <CopyButton
+                          textToCopy={normalResponse}
+                          className="opacity-100 hover:opacity-70"
+                        />
+                      </div>
+                      <div className="text-sm text-zinc-300 prose prose-invert max-w-none">
+                        <ReactMarkdown>
+                          {normalResponse}
+                        </ReactMarkdown>
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   {/* Explanation Card - only show if there's explanation content */}
                   {normalResponseParts.explanation && (

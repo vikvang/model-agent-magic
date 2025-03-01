@@ -13,6 +13,7 @@ from agents.critic import CriticAgent
 from agents.refiner import RefinerAgent
 from agents.evaluator import EvaluatorAgent
 from agents.config import ROLE_CONFIGS, BASE_CONFIG
+from supabase import create_client
 
 # Load environment variables from root .env file explicitly
 root_env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '.env')
@@ -229,69 +230,157 @@ async def normal_prompt(request: PromptRequest) -> NormalPromptResponse:
         print(f"Using provider: {provider}")
         print(f"Selected model for prompt optimization: {request.model}")
         
-        # Check if appropriate API key is available
-        if provider == "deepseek" and not deepseek_api_key:
-            print("ERROR: No DeepSeek API key found in environment variables")
+        # Initialize provider clients to None
+        user_deepseek_client = None
+        user_openai_client = None
+        
+        # Get user ID from session if available
+        user_id = None
+        if request.sessionId:
+            try:
+                # Try to extract user ID from session
+                supabase_url = os.getenv('VITE_SUPABASE_URL')
+                supabase_key = os.getenv('VITE_SUPABASE_ANON_KEY')
+                
+                if not supabase_url or not supabase_key:
+                    print(f"ERROR: Missing Supabase configuration - URL: {supabase_url}, Key: {supabase_key[:10] if supabase_key else None}")
+                    return NormalPromptResponse(
+                        success=False,
+                        response="",
+                        error="Server configuration error: Missing Supabase credentials"
+                    )
+                
+                print(f"Creating Supabase client with URL: {supabase_url}")
+                # Check if we have a service role key for higher privileges (recommended for accessing sensitive data)
+                service_role_key = os.getenv('SUPABASE_SERVICE_ROLE_KEY')
+                if service_role_key:
+                    print("Using service role key for database access (higher privileges)")
+                    supabase_client = create_client(supabase_url, service_role_key)
+                else:
+                    print("WARNING: Using anon key for database access - service role key recommended for API key retrieval")
+                    # Fall back to anon key if service role key not available
+                    supabase_client = create_client(supabase_url, supabase_key)
+                
+                # Use the session ID directly as the user ID
+                user_id = request.sessionId
+                print(f"Using session ID as user_id: {user_id}")
+                
+                # Retrieve the user's API keys
+                try:
+                    api_keys_result = supabase_client.table('user_api_keys').select(
+                        'openai_api_key, deepseek_api_key'
+                    ).eq('user_id', user_id).execute()
+                    
+                    print(f"API keys query result: {api_keys_result}")
+                    
+                    if api_keys_result.data and len(api_keys_result.data) > 0:
+                        user_api_keys = api_keys_result.data[0]
+                        print(f"Found user API keys: OpenAI: {'Yes' if user_api_keys.get('openai_api_key') else 'No'}, DeepSeek: {'Yes' if user_api_keys.get('deepseek_api_key') else 'No'}")
+                        
+                        # Use the user's API key based on the provider
+                        if provider == "deepseek":
+                            if user_api_keys.get('deepseek_api_key'):
+                                user_deepseek_key = user_api_keys.get('deepseek_api_key')
+                                user_deepseek_client = OpenAI(api_key=user_deepseek_key, base_url="https://api.deepseek.com/v1")
+                                print(f"Using user's DeepSeek API key: {user_deepseek_key[:5]}...")
+                            else:
+                                print("User has no DeepSeek API key")
+                                return NormalPromptResponse(
+                                    success=False,
+                                    response="",
+                                    error="You need to add your DeepSeek API key in settings to use DeepSeek models"
+                                )
+                                
+                        elif provider == "openai":
+                            if user_api_keys.get('openai_api_key'):
+                                user_openai_key = user_api_keys.get('openai_api_key')
+                                user_openai_client = OpenAI(api_key=user_openai_key)
+                                print(f"Using user's OpenAI API key: {user_openai_key[:5]}...")
+                            else:
+                                print("User has no OpenAI API key")
+                                return NormalPromptResponse(
+                                    success=False,
+                                    response="",
+                                    error="You need to add your OpenAI API key in settings to use OpenAI models"
+                                )
+                    else:
+                        print(f"No API keys found for user ID: {user_id}")
+                        return NormalPromptResponse(
+                            success=False,
+                            response="",
+                            error="No API keys found. Please add your API keys in your profile settings."
+                        )
+                except Exception as db_error:
+                    print(f"Database error retrieving API keys: {str(db_error)}")
+                    traceback.print_exc()
+                    return NormalPromptResponse(
+                        success=False,
+                        response="",
+                        error=f"Error retrieving your API keys: {str(db_error)}"
+                    )
+                    
+            except Exception as e:
+                print(f"Error retrieving user API keys: {str(e)}")
+                traceback.print_exc()
+                return NormalPromptResponse(
+                    success=False,
+                    response="",
+                    error=f"Authentication error: {str(e)}"
+                )
+        else:
+            print("No session ID provided")
             return NormalPromptResponse(
                 success=False,
                 response="",
-                error="Missing DeepSeek API key. Please check your .env file"
+                error="No session ID provided. Please log in to use this feature."
             )
-        elif provider == "openai" and not openai_api_key:
-            print("ERROR: No OpenAI API key found in environment variables")
+        
+        # Select the appropriate client based on provider
+        client = None
+        if provider == "deepseek":
+            # Use user's client (we've validated it exists above)
+            client = user_deepseek_client
+            api_model = "deepseek-chat"  # Model to use with DeepSeek API
+            print(f"Using DeepSeek client with model: {api_model}")
+        elif provider == "openai":
+            # Use user's client (we've validated it exists above)
+            client = user_openai_client
+            api_model = "gpt-4o-mini"  # Model to use with OpenAI API
+            print(f"Using OpenAI client with model: {api_model}")
+        else:
             return NormalPromptResponse(
                 success=False,
                 response="",
-                error="Missing OpenAI API key. Please check your .env file"
+                error=f"Unknown provider: {provider}"
             )
         
         print(f"Using {provider.upper()} for this request")
         
-        # Create a clear system message that emphasizes prompt enhancement, not answering
-        system_message = f"""You are a prompt optimization expert specializing in {request.role} topics. Your task is to IMPROVE the given prompt, not to answer it. 
+        # Construct system message from role config
+        system_message = role_config.get("system_message", "")
+        if not system_message:
+            print("WARNING: No system message found in role config")
+            system_message = "You are a helpful assistant."
         
-        Focus on making the original prompt:
-        1. More specific and detailed
-        2. Better structured
-        3. More likely to get a high-quality response
-        4. Include relevant context and constraints
+        # Construct user prompt message
+        user_prompt = request.prompt
         
-        Role-specific guidance for {request.role}:
-        {role_config.get('system_message', 'Optimize for clarity and specificity in this domain.')}
-        
-        DO NOT answer the prompt's question - instead, rewrite it to be a better prompt.
-        
-        Your response should be in this format:
-        "Enhanced prompt: [your improved version of the prompt]"
-        
-        Followed by a brief explanation of what you improved and why.
-        """
-        
-        user_prompt = f"Original prompt: {request.prompt}\nRole context: I am asking as a {request.role}."
-        
-        print(f"Sending enhanced request to model for role: {request.role}")
-        print(f"System message: {system_message[:100]}...")
-        print(f"User prompt: {user_prompt}")
+        print(f"System message: {system_message[:50]}...")
+        print(f"User prompt: {user_prompt[:50]}...")
         
         try:
-            # Select client and model based on provider
-            if provider == "deepseek":
-                client = deepseek_client
-                api_model = "deepseek-chat"  # Model to use with DeepSeek API
-                print(f"Using DeepSeek client with model: {api_model}")
-            else:  # OpenAI
-                client = openai_client
-                api_model = "gpt-4o-mini"  # Model to use with OpenAI API
-                print(f"Using OpenAI client with model: {api_model}")
-            
-            # Create the completion
+            # Create the completion using the selected client
             response = client.chat.completions.create(
                 model=api_model,
                 messages=[
                     {"role": "system", "content": system_message},
-                    {"role": "user", "content": user_prompt}
+                    {"role": "user", "content": f"""Please enhance the following prompt:
+
+{user_prompt}
+
+Remember to strictly follow the format specified in your instructions, with separate 'Enhanced Prompt:' and 'Explanation:' sections."""}
                 ],
-                temperature=0.7,
+                temperature=0.5,  # Lower temperature for more consistent formatting
                 max_tokens=1500
             )
             
@@ -315,16 +404,12 @@ async def normal_prompt(request: PromptRequest) -> NormalPromptResponse:
                 response="",
                 error=f"{provider.upper()} API Error: {str(api_error)}"
             )
-        
     except Exception as e:
-        print(f"ERROR in normal_prompt: {str(e)}")
-        print(f"Error type: {type(e).__name__}")
-        print(f"Traceback: {traceback.format_exc()}")
-        
+        print(f"General error in normal_prompt: {str(e)}")
         return NormalPromptResponse(
             success=False,
             response="",
-            error=f"General Error: {str(e)}"
+            error=f"Error: {str(e)}"
         )
 
 @app.post("/process-prompt")
