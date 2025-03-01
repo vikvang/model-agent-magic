@@ -41,6 +41,7 @@ downloads/
 eggs/
 .eggs/
 lib/
+!src/lib/  # Exception for src/lib directory
 lib64/
 parts/
 sdist/
