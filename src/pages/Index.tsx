@@ -6,36 +6,20 @@ import { PromptControls } from "@/components/prompt/PromptControls";
 import ReactMarkdown from "react-markdown";
 import { CopyButton } from "@/components/ui/copy-button";
 import { Info, AlertCircle } from "lucide-react";
-
-import { AgentMessages } from "@/components/prompt/AgentMessages";
-import { AgentService } from "@/services/agentService";
-import { AgentRole, ModelType, AgentType, Mode } from "@/types/agent";
-import { Switch } from "@/components/ui/switch";
+import { AgentRole, ModelType } from "@/types/agent";
 
 const Index = () => {
-  // Mode selection
-  const [mode, setMode] = useState<Mode>("MAS");
-
   // Shared state
   const [selectedModel, setSelectedModel] = useState<ModelType>("gpt4");
   const [selectedRole, setSelectedRole] = useState<AgentRole>("webdev");
   const [prompt, setPrompt] = useState("");
   const [sessionId] = useState(() => crypto.randomUUID());
   const [isProcessing, setIsProcessing] = useState(false);
-  const [aiResponse, setAiResponse] = useState({
-    improvedPrompt: "",
-    restOfResponse: "",
-  });
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
 
-  // Mode-specific state
-  const [masResponse, setMasResponse] = useState("");
+  // Normal mode state
   const [normalResponse, setNormalResponse] = useState("");
-  const [ragResponse, setRagResponse] = useState({
-    improvedPrompt: "",
-    restOfResponse: "",
-  });
 
   // State for separated response parts in NORMAL mode
   const [normalResponseParts, setNormalResponseParts] = useState<{
@@ -117,10 +101,10 @@ const Index = () => {
             // If "Enhanced prompt:" is on its own line, take lines until the separator
             enhancedPrompt = lines
               .slice(enhancedPromptLine + 1, endOfPrompt)
-          .join("\n")
-          .trim();
+              .join("\n")
+              .trim();
           }
-        explanation = lines.slice(endOfPrompt).join("\n").trim();
+          explanation = lines.slice(endOfPrompt).join("\n").trim();
         }
       } else {
         // If we can't find any structure, just return the whole thing as explanation
@@ -160,114 +144,41 @@ const Index = () => {
   const handleGregify = async () => {
     setIsLoading(true);
     setProgress(0);
-    setAiResponse({ improvedPrompt: "", restOfResponse: "" });
-    // Clear normal response parts too
+    // Clear normal response parts
     setNormalResponseParts({ enhancedPrompt: "", explanation: "" });
     setIsProcessing(true);
+    
     try {
-      if (mode === "MAS") {
-        const response = await ApiService.gregifyPrompt(
-          sessionId,
-          prompt,
-          selectedModel,
-          selectedRole
-        );
+      // NORMAL mode
+      console.log("Starting NORMAL mode request...");
+      const response = await ApiService.gregifyPromptNormal(
+        sessionId,
+        prompt,
+        selectedModel,
+        selectedRole
+      );
+      console.log(
+        "NORMAL mode response received, length:",
+        response.length
+      );
 
-        // Transform raw responses into AgentMessage format
-        if (response.messages && response.messages.length > 0) {
-          const transformedMessages = response.messages.map((msg) =>
-            AgentService.transformAgentResponse(msg, msg.type as AgentType)
-          );
+      // Parse the response to separate enhanced prompt and explanation
+      const { enhancedPrompt, explanation } = parseNormalResponse(response);
+      setNormalResponseParts({ enhancedPrompt, explanation });
 
-          // Find the evaluator's message to get the final prompt
-          const evaluatorMessage = transformedMessages.find(
-            (msg) => msg.type === "evaluator"
-          );
+      // Send the enhanced prompt to ChatGPT if we're in a Chrome extension
+      sendToChatGPT(enhancedPrompt);
 
-          // Update the agent conversation in the AgentService
-          AgentService.updateConversation(sessionId, {
-            sessionId,
-            messages: transformedMessages,
-            currentState: "complete",
-          });
+      // Set the normal response for display
+      setNormalResponse(response);
 
-          // Set the final prompt from the evaluator's content
-          setMasResponse(
-            evaluatorMessage?.content || "No optimized prompt generated"
-          );
-        } else {
-          setMasResponse("No response from agents");
-          AgentService.updateConversation(sessionId, {
-            sessionId,
-            messages: [],
-            currentState: "complete",
-          });
-        }
-      } else if (mode === "NORMAL") {
-        // NORMAL mode
-        try {
-          console.log("Starting NORMAL mode request...");
-          const response = await ApiService.gregifyPromptNormal(
-            sessionId,
-            prompt,
-            selectedModel,
-            selectedRole
-          );
-          console.log(
-            "NORMAL mode response received, length:",
-            response.length
-          );
-
-          // Parse the response to separate enhanced prompt and explanation
-          const { enhancedPrompt, explanation } = parseNormalResponse(response);
-          setNormalResponseParts({ enhancedPrompt, explanation });
-
-          // Send the enhanced prompt to ChatGPT if we're in a Chrome extension
-          sendToChatGPT(enhancedPrompt);
-
-          // Set the normal response for display
-          setNormalResponse(response);
-
-          setProgress(100);
-        } catch (error) {
-          console.error("Error in NORMAL mode:", error);
-          if (error instanceof Error) {
-            setNormalResponse(`Error: ${error.message}`);
-          } else {
-            setNormalResponse("Error: Failed to get response from AI");
-          }
-        }
-      } else {
-        // RAG mode
-        const response = await ApiService.gregifyPromptRAG(
-          sessionId,
-          prompt,
-          selectedModel,
-          selectedRole
-        );
-        const [improvedPrompt, ...restOfResponse] = response.split("\n\n");
-        setAiResponse({
-          improvedPrompt: improvedPrompt.trim(),
-          restOfResponse: restOfResponse.join("\n\n").trim(),
-        });
-        setProgress(100);
-      }
+      setProgress(100);
     } catch (error) {
-      if (mode === "MAS") {
-        setMasResponse("Error: Failed to get response from AI");
-        // Clear the agent conversation on error
-        AgentService.updateConversation(sessionId, {
-          sessionId,
-          messages: [],
-          currentState: "complete",
-        });
-      } else if (mode === "NORMAL") {
-        setNormalResponse("Error: Failed to get response from AI");
+      console.error("Error in NORMAL mode:", error);
+      if (error instanceof Error) {
+        setNormalResponse(`Error: ${error.message}`);
       } else {
-        setAiResponse({
-          improvedPrompt: "",
-          restOfResponse: "Error: Failed to get response from AI",
-        });
+        setNormalResponse("Error: Failed to get response from AI");
       }
     } finally {
       setIsProcessing(false);
@@ -278,15 +189,6 @@ const Index = () => {
     }
   };
 
-  // Get current agent conversation for MAS mode
-  const agentConversation =
-    mode === "MAS" ? AgentService.getConversation(sessionId) : null;
-
-  // Helper for changing the mode
-  const handleModeChange = (newMode: Mode) => {
-    setMode(newMode);
-  };
-
   return (
     <div className="min-h-[600px] w-[400px] bg-zinc-900 flex items-center justify-center p-4">
       <div className="w-full bg-[#1C1C1F] rounded-3xl p-6 shadow-xl border border-zinc-800">
@@ -295,43 +197,9 @@ const Index = () => {
             <h2 className="text-2xl font-medium tracking-tight text-white">
               Hi, I'm Greg
             </h2>
-            <div className="flex items-center space-x-2">
-              <div className="flex items-center rounded-lg bg-[#2C2C30] p-1">
-                <button
-                  onClick={() => handleModeChange("NORMAL")}
-                  className={`px-2 py-1 text-xs rounded-md transition-colors ${
-                    mode === "NORMAL"
-                      ? "bg-[#FF6B4A] text-white"
-                      : "text-zinc-400 hover:text-zinc-200"
-                  }`}
-                >
-                  Normal
-                </button>
-                <button
-                  onClick={() => handleModeChange("RAG")}
-                  className={`px-2 py-1 text-xs rounded-md transition-colors ${
-                    mode === "RAG"
-                      ? "bg-[#FF6B4A] text-white"
-                      : "text-zinc-400 hover:text-zinc-200"
-                  }`}
-                >
-                  RAG
-                </button>
-                <button
-                  onClick={() => handleModeChange("MAS")}
-                  className={`px-2 py-1 text-xs rounded-md transition-colors ${
-                    mode === "MAS"
-                      ? "bg-[#FF6B4A] text-white"
-                      : "text-zinc-400 hover:text-zinc-200"
-                  }`}
-                >
-                  MAS
-                </button>
-              </div>
-            </div>
           </div>
           <p className="text-sm text-zinc-400">
-            Choose your mode, model, role & prompt to get started
+            Choose your model, role & prompt to get started
           </p>
         </div>
 
@@ -376,118 +244,41 @@ const Index = () => {
             )}
           </Button>
 
-          {/* MAS Mode Response */}
-          {mode === "MAS" && (
-            <>
-              {masResponse && (
-                <div className="mt-4 p-4 bg-[#2C2C30] rounded-lg border border-zinc-700 relative group">
-                  <div className="flex justify-between items-center mb-3">
-                    <h3 className="text-sm font-medium text-zinc-300">
-                      Final Optimized Prompt
-                    </h3>
-                    <CopyButton
-                      textToCopy={masResponse
-                        .replace(
-                          /^(Improved Prompt:|Final Optimized Prompt:|Enhanced prompt for.*?role:)\s*/i,
-                          ""
-                        )
-                        .trim()}
-                      className="opacity-100 hover:opacity-70"
-                    />
-                  </div>
-                  <div className="text-sm text-zinc-300 prose prose-invert max-w-none">
-                    <ReactMarkdown>{masResponse}</ReactMarkdown>
-                  </div>
-                </div>
-              )}
-              {agentConversation?.messages && (
-                <AgentMessages
-                  messages={agentConversation.messages}
-                  className="mt-6"
-                />
-              )}
-            </>
-          )}
-
           {/* NORMAL Mode Response */}
-          {mode === "NORMAL" && (
-            <>
-              {/* Show error message if present */}
-              {normalResponse && normalResponse.startsWith("Error:") ? (
-                <div className="mt-4 p-4 bg-[#2C2C30] rounded-lg border border-red-700 text-red-400">
-                  <div className="flex items-center gap-2">
-                    <AlertCircle className="w-5 h-5" />
-                    <p className="text-sm">{normalResponse}</p>
-                  </div>
+          <>
+            {/* Show error message if present */}
+            {normalResponse && normalResponse.startsWith("Error:") ? (
+              <div className="mt-4 p-4 bg-[#2C2C30] rounded-lg border border-red-700 text-red-400">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="w-5 h-5" />
+                  <p className="text-sm">{normalResponse}</p>
                 </div>
-              ) : (
-                normalResponse && (
-                  <div className="mt-4 space-y-4">
-                    {/* Enhanced Prompt Card */}
-                    <div className="p-4 bg-[#2C2C30] rounded-lg border border-zinc-700 relative group">
-                      <div className="flex justify-between items-center mb-3">
-                        <h3 className="text-sm font-medium text-zinc-300">
-                          Enhanced Prompt
-                        </h3>
-                        <CopyButton
-                          textToCopy={
-                            normalResponseParts.enhancedPrompt || normalResponse
-                          }
-                          className="opacity-100 hover:opacity-70"
-                        />
-                      </div>
-                      <div className="text-sm text-zinc-300 prose prose-invert max-w-none">
-                        <ReactMarkdown>
-                          {normalResponseParts.enhancedPrompt || normalResponse}
-                        </ReactMarkdown>
-                      </div>
-                    </div>
-
-                    {/* Explanation Card - only show if there's explanation content */}
-                    {normalResponseParts.explanation && (
-                      <div className="p-4 bg-[#2C2C30] rounded-lg border border-zinc-700">
-                        <div className="flex items-center gap-2 mb-3">
-                          <Info className="w-4 h-4 text-[#FF6B4A]" />
-                          <h3 className="text-sm font-medium text-zinc-300">
-                            Explanation
-                          </h3>
-                        </div>
-                        <div className="text-sm text-zinc-300 prose prose-invert max-w-none">
-                          <ReactMarkdown>
-                            {normalResponseParts.explanation}
-                          </ReactMarkdown>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )
-              )}
-            </>
-          )}
-
-          {/* RAG Mode Response */}
-          {mode === "RAG" && (
-            <>
-              {aiResponse.improvedPrompt && (
+              </div>
+            ) : (
+              normalResponse && (
                 <div className="mt-4 space-y-4">
-                  {/* Improved Prompt Card */}
+                  {/* Enhanced Prompt Card */}
                   <div className="p-4 bg-[#2C2C30] rounded-lg border border-zinc-700 relative group">
                     <div className="flex justify-between items-center mb-3">
                       <h3 className="text-sm font-medium text-zinc-300">
-                        Improved Prompt
+                        Enhanced Prompt
                       </h3>
                       <CopyButton
-                        textToCopy={aiResponse.improvedPrompt}
+                        textToCopy={
+                          normalResponseParts.enhancedPrompt || normalResponse
+                        }
                         className="opacity-100 hover:opacity-70"
                       />
                     </div>
                     <div className="text-sm text-zinc-300 prose prose-invert max-w-none">
-                      <ReactMarkdown>{aiResponse.improvedPrompt}</ReactMarkdown>
+                      <ReactMarkdown>
+                        {normalResponseParts.enhancedPrompt || normalResponse}
+                      </ReactMarkdown>
                     </div>
                   </div>
 
-                  {/* Explanation Card */}
-                  {aiResponse.restOfResponse && (
+                  {/* Explanation Card - only show if there's explanation content */}
+                  {normalResponseParts.explanation && (
                     <div className="p-4 bg-[#2C2C30] rounded-lg border border-zinc-700">
                       <div className="flex items-center gap-2 mb-3">
                         <Info className="w-4 h-4 text-[#FF6B4A]" />
@@ -497,15 +288,15 @@ const Index = () => {
                       </div>
                       <div className="text-sm text-zinc-300 prose prose-invert max-w-none">
                         <ReactMarkdown>
-                          {aiResponse.restOfResponse}
+                          {normalResponseParts.explanation}
                         </ReactMarkdown>
                       </div>
                     </div>
                   )}
                 </div>
-              )}
-            </>
-          )}
+              )
+            )}
+          </>
         </div>
       </div>
     </div>

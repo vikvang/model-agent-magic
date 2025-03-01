@@ -39,7 +39,7 @@ const config = {
   // Extension settings
   settings: {
     defaultRole: "webdev",
-    defaultModel: "sonar",
+    defaultModel: "deepseek",
     availableRoles: ["webdev", "syseng", "analyst", "designer"],
     useMultiAgent: true,
     promptHistory: {

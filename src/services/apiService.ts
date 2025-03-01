@@ -40,7 +40,8 @@ export class ApiService {
   private static AGENT_URL = "http://localhost:8000"; // AutoGen backend
   private static RAG_URL = "http://localhost:8000/rag"; // RAG endpoint
 
-  // MAS endpoint
+  // MAS endpoint - commented out
+  /*
   static async gregifyPrompt(
     sessionId: string,
     prompt: string,
@@ -114,6 +115,7 @@ export class ApiService {
       };
     }
   }
+  */
 
   // NORMAL mode endpoint
   static async gregifyPromptNormal(
@@ -212,7 +214,8 @@ export class ApiService {
     }
   }
 
-  // RAG endpoint
+  // RAG endpoint - commented out
+  /*
   static async gregifyPromptRAG(
     sessionId: string,
     prompt: string,
@@ -238,4 +241,5 @@ export class ApiService {
       throw new Error("Failed to get response from AI");
     }
   }
+  */
 }

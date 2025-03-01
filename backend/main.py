@@ -265,6 +265,8 @@ async def normal_prompt(request: PromptRequest) -> NormalPromptResponse:
 @app.post("/process-prompt")
 async def process_prompt(request: PromptRequest) -> PromptResponse:
     """Process a prompt through the multi-agent system."""
+    # Commenting out MAS mode as requested
+    """
     try:
         # Validate role
         if request.role not in ROLE_CONFIGS:
@@ -352,6 +354,14 @@ async def process_prompt(request: PromptRequest) -> PromptResponse:
             final_prompt="",
             error=str(e)
         )
+    """
+    # Return a response indicating MAS mode is disabled
+    return PromptResponse(
+        success=False,
+        messages=[],
+        final_prompt="",
+        error="MAS mode is currently disabled. Please use normal mode instead."
+    )
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

@@ -9,9 +9,9 @@ BASE_CONFIG = {
     "seed": 42,
     "temperature": 0.7,
     "config_list": [{
-        "model": "sonar",  # change model here
-        "api_key": os.getenv("OPENAI_API_KEY"),
-        "base_url": "https://api.perplexity.ai",
+        "model": "deepseek-chat",  # Use DeepSeek Chat model
+        "api_key": os.getenv("DEEPSEEK_API_KEY"),  # changed from OPENAI_API_KEY to DEEPSEEK_API_KEY
+        "base_url": "https://api.deepseek.com/v1",  # changed from Perplexity to DeepSeek
         # modify this to use gpt-4 for the agents later
     }],
 }

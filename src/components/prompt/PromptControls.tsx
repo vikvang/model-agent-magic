@@ -49,6 +49,12 @@ export const PromptControls = ({
             >
               Gemini Pro
             </SelectItem>
+            <SelectItem
+              value="deepseek"
+              className="text-white focus:text-white focus:bg-[#3C3C40]"
+            >
+              DeepSeek Chat
+            </SelectItem>
           </SelectContent>
         </Select>
       </div>
