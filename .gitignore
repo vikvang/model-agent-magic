@@ -25,6 +25,10 @@ ENV/
 .env.local
 .env.development
 .env.production
+**/.env
+**/.env.local
+**/.env.development
+**/.env.production
 # Byte-compiled / optimized files
 __pycache__/
 *.py[cod]
