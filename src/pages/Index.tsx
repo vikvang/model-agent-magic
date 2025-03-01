@@ -150,13 +150,18 @@ const Index = () => {
     setIsProcessing(true);
     
     try {
+      // Get the preferred AI provider from localStorage
+      const aiProvider = localStorage.getItem("gregify_ai_provider") || "deepseek";
+      console.log(`Using AI Provider: ${aiProvider}`);
+      
       // NORMAL mode
       console.log("Starting NORMAL mode request...");
       const response = await ApiService.gregifyPromptNormal(
         sessionId,
         prompt,
         selectedModel,
-        selectedRole
+        selectedRole,
+        aiProvider
       );
       console.log(
         "NORMAL mode response received, length:",

@@ -23,66 +23,55 @@ export const PromptControls = ({
 }: PromptControlsProps) => {
   const [preferredProvider, setPreferredProvider] = useState<string>("deepseek");
 
-  // Load saved AI provider preference on mount and when it changes
+  // Load saved AI provider preference on mount
   useEffect(() => {
     const savedProvider = localStorage.getItem("gregify_ai_provider");
     if (savedProvider) {
       setPreferredProvider(savedProvider);
-      
-      // Auto-select the default model for the preferred provider
-      if (savedProvider === "openai" && selectedModel !== "gpt4o-mini") {
-        onModelChange("gpt4o-mini");
-      } else if (savedProvider === "deepseek" && selectedModel !== "deepseek") {
-        onModelChange("deepseek");
-      }
     }
-  }, [preferredProvider, selectedModel, onModelChange]);
+  }, []);
 
   return (
     <>
       <div className="space-y-2">
         <label className="text-sm font-medium text-zinc-300">
-          Select Model
+          Optimize For Model
         </label>
         <Select onValueChange={onModelChange} value={selectedModel}>
           <SelectTrigger className="w-full bg-[#2C2C30] text-white border-zinc-700 rounded-xl hover:bg-[#3C3C40] transition-colors">
             <SelectValue placeholder="Choose a model" />
           </SelectTrigger>
           <SelectContent className="bg-[#2C2C30] border-zinc-700 text-white">
-            {preferredProvider === "openai" && (
-              <SelectItem
-                value="gpt4o-mini"
-                className="text-white focus:text-white focus:bg-[#3C3C40]"
-              >
-                GPT-4o mini
-              </SelectItem>
-            )}
             <SelectItem
               value="gpt4"
               className="text-white focus:text-white focus:bg-[#3C3C40]"
             >
-              GPT-4
+              OpenAI GPT-4
             </SelectItem>
             <SelectItem
               value="claude"
               className="text-white focus:text-white focus:bg-[#3C3C40]"
             >
-              Claude-3.5
+              Anthropic Claude-3.5
             </SelectItem>
             <SelectItem
               value="gemini"
               className="text-white focus:text-white focus:bg-[#3C3C40]"
             >
-              Gemini Pro
+              Google Gemini Pro
             </SelectItem>
-            {preferredProvider === "deepseek" && (
-              <SelectItem
-                value="deepseek"
-                className="text-white focus:text-white focus:bg-[#3C3C40]"
-              >
-                DeepSeek Chat
-              </SelectItem>
-            )}
+            <SelectItem
+              value="deepseek"
+              className="text-white focus:text-white focus:bg-[#3C3C40]"
+            >
+              DeepSeek Chat
+            </SelectItem>
+            <SelectItem
+              value="gpt4o-mini"
+              className="text-white focus:text-white focus:bg-[#3C3C40]"
+            >
+              Grok
+            </SelectItem>
           </SelectContent>
         </Select>
       </div>

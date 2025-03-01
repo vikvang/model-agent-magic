@@ -183,6 +183,7 @@ class PromptRequest(BaseModel):
     role: str
     model: str
     sessionId: str
+    provider: str = "deepseek"  # Add provider field with default value
 
 class AgentMessage(BaseModel):
     type: str
@@ -223,15 +224,10 @@ async def normal_prompt(request: PromptRequest) -> NormalPromptResponse:
         role_config = ROLE_CONFIGS[request.role]
         print(f"Role config keys: {role_config.keys()}")
         
-        # Determine which provider to use based on the model selection
-        provider = "deepseek"
-        print(f"Received model parameter: {request.model}")
-        
-        if request.model in ["gpt4o-mini", "gpt-4o-mini"]:
-            provider = "openai"
-            print(f"Model '{request.model}' matched OpenAI pattern, using OpenAI provider")
-        else:
-            print(f"Using DeepSeek provider for model: {request.model}")
+        # Use the provider from the request (falls back to default "deepseek")
+        provider = request.provider
+        print(f"Using provider: {provider}")
+        print(f"Selected model for prompt optimization: {request.model}")
         
         # Check if appropriate API key is available
         if provider == "deepseek" and not deepseek_api_key:
@@ -281,16 +277,16 @@ async def normal_prompt(request: PromptRequest) -> NormalPromptResponse:
             # Select client and model based on provider
             if provider == "deepseek":
                 client = deepseek_client
-                model = "deepseek-chat"
-                print(f"Using DeepSeek client with model: {model}")
+                api_model = "deepseek-chat"  # Model to use with DeepSeek API
+                print(f"Using DeepSeek client with model: {api_model}")
             else:  # OpenAI
                 client = openai_client
-                model = "gpt-4o-mini"  # Always use hyphenated version for the API
-                print(f"Using OpenAI client with model: {model}")
+                api_model = "gpt-4o-mini"  # Model to use with OpenAI API
+                print(f"Using OpenAI client with model: {api_model}")
             
             # Create the completion
             response = client.chat.completions.create(
-                model=model,
+                model=api_model,
                 messages=[
                     {"role": "system", "content": system_message},
                     {"role": "user", "content": user_prompt}

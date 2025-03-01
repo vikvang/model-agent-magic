@@ -8,10 +8,13 @@
 // Determine if we're in production mode
 const isProduction = !window.location.href.includes("localhost");
 
-// Check preferred AI provider
+// Default model for prompt optimization based on user preference
+// This is separate from the AI provider setting
 const getDefaultModel = () => {
+  // We still use a reasonable default based on provider
   const preferredProvider = localStorage.getItem("gregify_ai_provider") || "deepseek";
-  return preferredProvider === "openai" ? "gpt4o-mini" : "deepseek";
+  // But this is just for a better initial experience - they are decoupled
+  return preferredProvider === "openai" ? "gpt4" : "deepseek";
 };
 
 // Base configuration
