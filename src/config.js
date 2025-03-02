@@ -23,7 +23,7 @@ const config = {
   api: {
     // Base API URL - this should be updated when deployed
     baseUrl: isProduction
-      ? "https://gregify-production.up.railway.app" // Replace with your Railway URL
+      ? "https://gregify-production.up.railway.app" // Updated Railway URL
       : "http://localhost:8000",
 
     // API endpoints
@@ -40,7 +40,7 @@ const config = {
   // Supabase configuration (if using Supabase directly from frontend)
   supabase: {
     url: isProduction
-      ? "https://your-project-id.supabase.co" // Replace with your Supabase URL
+      ? "https://xfcuhjsxodypspldaorz.supabase.co" // Update with your actual Supabase URL
       : "http://localhost:54321", // Local Supabase URL
     key: "your-supabase-anon-key", // Replace with your public anon key
   },

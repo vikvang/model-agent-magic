@@ -37,8 +37,8 @@ interface GregifyResponse {
 export class ApiService {
   private static BASE_URL = "http://localhost:5678/webhook";
   private static API_ENDPOINT = "9efe590c-2792-4468-8094-613c55c7ab89";
-  private static AGENT_URL = "http://localhost:8000"; // AutoGen backend
-  private static RAG_URL = "http://localhost:8000/rag"; // RAG endpoint
+  private static AGENT_URL = "https://gregify-production.up.railway.app"; // Updated to Railway URL
+  private static RAG_URL = "https://gregify-production.up.railway.app/rag"; // Updated to Railway URL
 
   // MAS endpoint - commented out
   /*
@@ -126,8 +126,17 @@ export class ApiService {
     provider: string = "deepseek" 
   ): Promise<string> {
     try {
-      console.log(`Making normal prompt request with provider: ${provider}`);
-      const response = await fetch(`${this.AGENT_URL}/normal-prompt`, {
+      const requestUrl = `${this.AGENT_URL}/normal-prompt`;
+      console.log(`Making request to: ${requestUrl}`);
+      console.log('Request payload:', {
+        sessionId,
+        prompt,
+        model,
+        role,
+        provider,
+      });
+      
+      const response = await fetch(requestUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -19,7 +19,7 @@
     "128": "icons/icon128.png"
   },
   "content_security_policy": {
-    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'; connect-src 'self' http://localhost:* http://127.0.0.1:* https://xfcuhjsxodypspldaorz.supabase.co/* https://* https://chat.openai.com/* https://chatgpt.com/* https://*.supabase.co/*"
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'; connect-src 'self' http://localhost:* http://127.0.0.1:* https://gregify-production.up.railway.app/* https://xfcuhjsxodypspldaorz.supabase.co/* https://* https://chat.openai.com/* https://chatgpt.com/* https://*.supabase.co/*"
   },
   "background": {
     "service_worker": "background.js",
@@ -49,6 +49,8 @@
     }
   ],
   "host_permissions": [
+    "http://localhost:*",
+    "https://gregify-production.up.railway.app/*",
     "http://localhost:8000/*",
     "http://localhost:5678/*"
   ]
