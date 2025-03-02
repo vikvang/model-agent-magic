@@ -33,7 +33,7 @@ class BaseAgent:
             name="user_proxy",
             human_input_mode="NEVER",
             max_consecutive_auto_reply=1,
-            code_execution_config={"work_dir": "coding", "use_docker": False},
+            code_execution_config={"work_dir": "coding"},
         )
     
     async def process(self, prompt: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:

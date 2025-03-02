@@ -26,9 +26,7 @@ ROLE_CONFIGS: Dict[str, Dict[str, Any]] = {
         "name": "System Engineer",
         "system_message": """You are an expert system engineer prompt engineer.
         Analyze and improve prompts related to system engineering, focusing on:
-        - Infrastructure and deployment
-        - Scalability and reliability
-        - DevOps and SRE practices""",
+        - Scalability and reliability""",
     },
     "analyst": {
         "name": "Data Analyst",
