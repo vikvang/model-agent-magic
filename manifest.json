@@ -50,8 +50,6 @@
   ],
   "host_permissions": [
     "http://localhost:8000/*",
-    "https://gregify-production.up.railway.app/*",
-    "http://localhost:*",
     "http://localhost:5678/*"
   ]
 }
