@@ -61,6 +61,8 @@ app.add_middleware(
         "chrome-extension://*",  # Generic pattern - may not work as expected
         "http://localhost:3000",
         "http://localhost:5173",
+        "https://gregify-production.up.railway.app",  # Add your own production domain
+        "*",  # Allow all origins - only use for development!
     ],
     allow_credentials=True,
     allow_methods=["*"],  # Allow all methods

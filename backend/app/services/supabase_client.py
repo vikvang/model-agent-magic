@@ -5,7 +5,7 @@ from typing import Dict, Any, Optional
 import os
 from supabase import create_client, Client
 from ..core.config import settings
-
+#please work
 class SupabaseService:
     """Service for interacting with Supabase for database and authentication."""
     
