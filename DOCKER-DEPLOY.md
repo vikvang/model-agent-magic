@@ -156,6 +156,9 @@ Pull from a Git repository:
 
 ```bash
 # On your EC2 instance
+sudo yum install -y git
+
+
 git clone https://github.com/vikvang/gregify-backend.git 
 cd gregify
 git checkout sathwik-build
@@ -164,6 +167,14 @@ git pull
 nano .env
 # Copy paste the environment variables
 # Ctrl+O, Enter, Ctrl+X
+
+nano src/config.js
+```
+
+```javascript
+baseUrl: isProduction:
+  ? "http://your-ec2-public-ip" // Replace with EC2 IP address
+  : "http://localhost/8000",
 ```
 
 ### 2. Build and Run the Docker Container
