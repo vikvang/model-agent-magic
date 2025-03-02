@@ -2,7 +2,7 @@
  * Configuration for the Gregify Chrome extension
  *
  * This file provides environment-specific configuration for the extension.
- * In development, it uses localhost. In production, it uses Railway.
+ * In development, it uses localhost. In production, it uses EC2 public IP.
  */
 
 // Determine if we're in production mode
@@ -23,7 +23,7 @@ const config = {
   api: {
     // Base API URL - this should be updated when deployed
     baseUrl: isProduction
-      ? "https://gregify-production.up.railway.app" // Replace with your Railway URL
+      ? "http://your-ec2-public-ip" // Replace with your EC2 public IP or domain
       : "http://localhost:8000",
 
     // API endpoints

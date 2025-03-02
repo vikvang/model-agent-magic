@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  backend:
+    build: 
+      context: ./backend
+    restart: always
+    ports:
+      - "80:8000"
+    env_file:
+      - .env
+    environment:
+      - ENVIRONMENT=production
+      - HOST=0.0.0.0
+      - PORT=8000
+      - PYTHONPATH=/app
+      - FRONTEND_URL=chrome-extension://*
+      - JWT_SECRET=${JWT_SECRET:-your-jwt-secret-replace-in-production}
+      - JWT_EXPIRATION_MINUTES=1440
+    volumes:
+      - ./backend:/app
+
+# No need for a frontend service or network since the extension 
+# will communicate directly with the backend via HTTP

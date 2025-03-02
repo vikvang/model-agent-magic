@@ -56,12 +56,10 @@ app = FastAPI(
 # Add CORS middleware with more permissive settings
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins
-    allow_credentials=False,  # Changed to False for compatibility with wildcard origin
-    allow_methods=["*"],  # Allow all methods
-    allow_headers=["*"],  # Allow all headers
-    expose_headers=["*"],
-    max_age=3600,
+    allow_origins=["chrome-extension://*"],  # Allow requests from any Chrome extension
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Add global exception handler
