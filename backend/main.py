@@ -93,19 +93,6 @@ async def log_requests(request, call_next):
     # Don't manually set CORS headers here - let the CORS middleware handle it
     return response
 
-# Add specific handler for OPTIONS requests to support CORS preflight
-@app.options("/{rest_of_path:path}")
-async def options_handler(request: Request, rest_of_path: str):
-    return JSONResponse(
-        content="OK",
-        headers={
-            "Access-Control-Allow-Origin": request.headers.get("origin", "*"),
-            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-            "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With",
-            "Access-Control-Allow-Credentials": "true",
-        }
-    )
-
 @app.get("/")
 async def root():
     """Root endpoint with API information."""
@@ -214,12 +201,6 @@ class NormalPromptResponse(BaseModel):
     success: bool
     response: str
     error: Optional[str] = None
-
-# Add an OPTIONS route handler to explicitly handle preflight requests
-@app.options("/normal-prompt")
-async def normal_prompt_options():
-    """Handle OPTIONS preflight requests for normal-prompt endpoint."""
-    return {}  # FastAPI will automatically add CORS headers
 
 @app.post("/normal-prompt")
 async def normal_prompt(request: PromptRequest) -> NormalPromptResponse:
