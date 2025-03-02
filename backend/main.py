@@ -56,9 +56,14 @@ app = FastAPI(
 # Add CORS middleware with more permissive settings
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins
-    allow_credentials=False,  # Changed to False for compatibility with wildcard origin
-    allow_methods=["GET", "POST", "OPTIONS", "DELETE", "PUT", "PATCH"],  # Explicitly list all methods
+    allow_origins=[
+        "chrome-extension://bpoeahfpbjimmjjgjiojokbljpgpjjee",  # Your specific extension ID
+        "chrome-extension://*",  # Generic pattern - may not work as expected
+        "http://localhost:3000",
+        "http://localhost:5173",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow all methods
     allow_headers=["*"],  # Allow all headers
     expose_headers=["*"],
     max_age=3600,
@@ -92,6 +97,19 @@ async def log_requests(request, call_next):
     
     # Don't manually set CORS headers here - let the CORS middleware handle it
     return response
+
+# Add specific handler for OPTIONS requests to support CORS preflight
+@app.options("/{rest_of_path:path}")
+async def options_handler(request: Request, rest_of_path: str):
+    return JSONResponse(
+        content="OK",
+        headers={
+            "Access-Control-Allow-Origin": request.headers.get("origin", "*"),
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With",
+            "Access-Control-Allow-Credentials": "true",
+        }
+    )
 
 @app.get("/")
 async def root():
@@ -202,37 +220,23 @@ class NormalPromptResponse(BaseModel):
     response: str
     error: Optional[str] = None
 
-# Add an explicit OPTIONS handler for the normal-prompt endpoint
+# Add an OPTIONS route handler to explicitly handle preflight requests
 @app.options("/normal-prompt")
-async def options_normal_prompt():
-    return JSONResponse(
-        content="OK",
-        headers={
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "POST, OPTIONS",
-            "Access-Control-Allow-Headers": "*",
-            "Access-Control-Max-Age": "86400",  # 24 hours in seconds
-        }
-    )
+async def normal_prompt_options():
+    """Handle OPTIONS preflight requests for normal-prompt endpoint."""
+    return {}  # FastAPI will automatically add CORS headers
 
 @app.post("/normal-prompt")
-async def normal_prompt(request: PromptRequest) -> JSONResponse:
+async def normal_prompt(request: PromptRequest) -> NormalPromptResponse:
     """Process a prompt directly using the specified AI model."""
     try:
         # Validate role
         if request.role not in ROLE_CONFIGS:
             print(f"Invalid role: {request.role}")
-            return JSONResponse(
-                content={
-                    "success": False,
-                    "response": "",
-                    "error": f"Invalid role: {request.role}"
-                },
-                headers={
-                    "Access-Control-Allow-Origin": "*",
-                    "Access-Control-Allow-Methods": "POST, OPTIONS",
-                    "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With",
-                }
+            return NormalPromptResponse(
+                success=False,
+                response="",
+                error=f"Invalid role: {request.role}"
             )
         
         # Get the role config
@@ -258,17 +262,10 @@ async def normal_prompt(request: PromptRequest) -> JSONResponse:
                 
                 if not supabase_url or not supabase_key:
                     print(f"ERROR: Missing Supabase configuration - URL: {supabase_url}, Key: {supabase_key[:10] if supabase_key else None}")
-                    return JSONResponse(
-                        content={
-                            "success": False,
-                            "response": "",
-                            "error": "Server configuration error: Missing Supabase credentials"
-                        },
-                        headers={
-                            "Access-Control-Allow-Origin": "*",
-                            "Access-Control-Allow-Methods": "POST, OPTIONS",
-                            "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With",
-                        }
+                    return NormalPromptResponse(
+                        success=False,
+                        response="",
+                        error="Server configuration error: Missing Supabase credentials"
                     )
                 
                 print(f"Creating Supabase client with URL: {supabase_url}")
@@ -306,17 +303,10 @@ async def normal_prompt(request: PromptRequest) -> JSONResponse:
                                 print(f"Using user's DeepSeek API key: {user_deepseek_key[:5]}...")
                             else:
                                 print("User has no DeepSeek API key")
-                                return JSONResponse(
-                                    content={
-                                        "success": False,
-                                        "response": "",
-                                        "error": "You need to add your DeepSeek API key in settings to use DeepSeek models"
-                                    },
-                                    headers={
-                                        "Access-Control-Allow-Origin": "*",
-                                        "Access-Control-Allow-Methods": "POST, OPTIONS",
-                                        "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With",
-                                    }
+                                return NormalPromptResponse(
+                                    success=False,
+                                    response="",
+                                    error="You need to add your DeepSeek API key in settings to use DeepSeek models"
                                 )
                                 
                         elif provider == "openai":
@@ -326,76 +316,41 @@ async def normal_prompt(request: PromptRequest) -> JSONResponse:
                                 print(f"Using user's OpenAI API key: {user_openai_key[:5]}...")
                             else:
                                 print("User has no OpenAI API key")
-                                return JSONResponse(
-                                    content={
-                                        "success": False,
-                                        "response": "",
-                                        "error": "You need to add your OpenAI API key in settings to use OpenAI models"
-                                    },
-                                    headers={
-                                        "Access-Control-Allow-Origin": "*",
-                                        "Access-Control-Allow-Methods": "POST, OPTIONS",
-                                        "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With",
-                                    }
+                                return NormalPromptResponse(
+                                    success=False,
+                                    response="",
+                                    error="You need to add your OpenAI API key in settings to use OpenAI models"
                                 )
                     else:
                         print(f"No API keys found for user ID: {user_id}")
-                        return JSONResponse(
-                            content={
-                                "success": False,
-                                "response": "",
-                                "error": "No API keys found. Please add your API keys in your profile settings."
-                            },
-                            headers={
-                                "Access-Control-Allow-Origin": "*",
-                                "Access-Control-Allow-Methods": "POST, OPTIONS",
-                                "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With",
-                            }
+                        return NormalPromptResponse(
+                            success=False,
+                            response="",
+                            error="No API keys found. Please add your API keys in your profile settings."
                         )
                 except Exception as db_error:
                     print(f"Database error retrieving API keys: {str(db_error)}")
                     traceback.print_exc()
-                    return JSONResponse(
-                        content={
-                            "success": False,
-                            "response": "",
-                            "error": f"Error retrieving your API keys: {str(db_error)}"
-                        },
-                        headers={
-                            "Access-Control-Allow-Origin": "*",
-                            "Access-Control-Allow-Methods": "POST, OPTIONS",
-                            "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With",
-                        }
+                    return NormalPromptResponse(
+                        success=False,
+                        response="",
+                        error=f"Error retrieving your API keys: {str(db_error)}"
                     )
                     
             except Exception as e:
                 print(f"Error retrieving user API keys: {str(e)}")
                 traceback.print_exc()
-                return JSONResponse(
-                    content={
-                        "success": False,
-                        "response": "",
-                        "error": f"Authentication error: {str(e)}"
-                    },
-                    headers={
-                        "Access-Control-Allow-Origin": "*",
-                        "Access-Control-Allow-Methods": "POST, OPTIONS",
-                        "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With",
-                    }
+                return NormalPromptResponse(
+                    success=False,
+                    response="",
+                    error=f"Authentication error: {str(e)}"
                 )
         else:
             print("No session ID provided")
-            return JSONResponse(
-                content={
-                    "success": False,
-                    "response": "",
-                    "error": "No session ID provided. Please log in to use this feature."
-                },
-                headers={
-                    "Access-Control-Allow-Origin": "*",
-                    "Access-Control-Allow-Methods": "POST, OPTIONS",
-                    "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With",
-                }
+            return NormalPromptResponse(
+                success=False,
+                response="",
+                error="No session ID provided. Please log in to use this feature."
             )
         
         # Select the appropriate client based on provider
@@ -411,17 +366,10 @@ async def normal_prompt(request: PromptRequest) -> JSONResponse:
             api_model = "gpt-4o-mini"  # Model to use with OpenAI API
             print(f"Using OpenAI client with model: {api_model}")
         else:
-            return JSONResponse(
-                content={
-                    "success": False,
-                    "response": "",
-                    "error": f"Unknown provider: {provider}"
-                },
-                headers={
-                    "Access-Control-Allow-Origin": "*",
-                    "Access-Control-Allow-Methods": "POST, OPTIONS",
-                    "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With",
-                }
+            return NormalPromptResponse(
+                success=False,
+                response="",
+                error=f"Unknown provider: {provider}"
             )
         
         print(f"Using {provider.upper()} for this request")
@@ -459,48 +407,27 @@ Remember to strictly follow the format specified in your instructions, with sepa
             
             print(f"Received response from {provider} (first 100 chars): {response_text[:100]}...")
             
-            return JSONResponse(
-                content={
-                    "success": True,
-                    "response": response_text,
-                    "error": None
-                },
-                headers={
-                    "Access-Control-Allow-Origin": "*",
-                    "Access-Control-Allow-Methods": "POST, OPTIONS",
-                    "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With",
-                }
+            return NormalPromptResponse(
+                success=True,
+                response=response_text,
+                error=None
             )
         except Exception as api_error:
             # Log detailed API error
             print(f"ERROR in {provider} API call: {str(api_error)}")
             print(f"API error type: {type(api_error).__name__}")
             
-            return JSONResponse(
-                content={
-                    "success": False,
-                    "response": "",
-                    "error": f"{provider.upper()} API Error: {str(api_error)}"
-                },
-                headers={
-                    "Access-Control-Allow-Origin": "*",
-                    "Access-Control-Allow-Methods": "POST, OPTIONS",
-                    "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With",
-                }
+            return NormalPromptResponse(
+                success=False,
+                response="",
+                error=f"{provider.upper()} API Error: {str(api_error)}"
             )
     except Exception as e:
         print(f"General error in normal_prompt: {str(e)}")
-        return JSONResponse(
-            content={
-                "success": False,
-                "response": "",
-                "error": f"Error: {str(e)}"
-            },
-            headers={
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Methods": "POST, OPTIONS",
-                "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With",
-            }
+        return NormalPromptResponse(
+            success=False,
+            response="",
+            error=f"Error: {str(e)}"
         )
 
 @app.post("/process-prompt")
