@@ -30,7 +30,7 @@ Before starting, ensure you have:
 1. Log in to the AWS Management Console
 2. Navigate to EC2 service
 3. Click "Launch Instance"
-4. Select an Amazon Machine Image (AMI) - Ubuntu Server 22.04 LTS is recommended
+4. Select an Amazon Machine Image (AMI) - Linux 2023
 5. Choose an instance type (t2.micro is sufficient for testing)
 6. Configure instance details as needed
 7. Add storage (default is usually sufficient)
@@ -53,32 +53,28 @@ chmod 400 your-key-pair.pem
 ssh -i "your-key-pair.pem" ubuntu@your-ec2-public-dns.amazonaws.com
 ```
 
+Or just connect online. Click the "Connect" button.
+
 ### 3. Install Docker on EC2
 
 ```bash
 # Update the package index
-sudo apt update
+sudo yum update
 
-# Install packages to allow apt to use a repository over HTTPS
-sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
+# Install Docker
+sudo yum install -y docker
 
-# Add Docker's official GPG key
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+# Start Docker Service
+sudo systemctl start docker
 
-# Set up the stable Docker repository
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+# Enable Docker Service on Boot
+sudo systemctl enable docker
 
-# Update the package index again
-sudo apt update
+# Add ec2-user to the docker group so we can run docker without sudo
+sudo usermod -a -G docker ec2-user
 
-# Install Docker Engine
-sudo apt install -y docker-ce docker-ce-cli containerd.io
-
-# Add your user to the docker group to run Docker without sudo
-sudo usermod -aG docker $USER
-
-# Apply the group changes (or you can log out and back in)
-newgrp docker
+# Check Version
+docker --version
 ```
 
 ### 4. Install Docker Compose
@@ -98,41 +94,30 @@ docker-compose --version
 
 ### 1. Create a Dockerfile
 
-In your FastAPI backend directory, create a `Dockerfile`:
+In your backend directory, create a `Dockerfile`:
 
 ```dockerfile
 FROM python:3.9-slim
 
 WORKDIR /app
 
+# Copy requirements first for better caching
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Copy the rest of the application
 COPY . .
 
-EXPOSE 8000
+# Set environment variables
+ENV HOST=0.0.0.0
+ENV PORT=8000
+ENV PYTHONPATH=/app
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Run the application
+CMD ["python", "main.py"]
 ```
 
-### 2. Create a docker-compose.yml file
-
-```yaml
-version: '3'
-
-services:
-  api:
-    build: .
-    ports:
-      - "8000:8000"
-    volumes:
-      - ./:/app
-    environment:
-      - ENVIRONMENT=production
-      - ALLOW_ORIGINS=*
-```
-
-### 3. Create a .dockerignore file
+### 3. Create a .dockerignore file if you want to. I didnt.
 
 ```
 __pycache__/
@@ -167,17 +152,18 @@ ENV/
 
 ### 1. Transfer Your Code to EC2
 
-Option 1: Use SCP to transfer files:
-
-```bash
-scp -i "your-key-pair.pem" -r /path/to/your/backend ubuntu@your-ec2-public-dns.amazonaws.com:~/backend
-```
-
-Option 2: Pull from a Git repository:
+Pull from a Git repository:
 
 ```bash
 # On your EC2 instance
-git clone https://github.com/yourusername/gregify-backend.git ~/backend
+git clone https://github.com/vikvang/gregify-backend.git 
+cd gregify
+git checkout sathwik-build
+git pull
+
+nano .env
+# Copy paste the environment variables
+# Ctrl+O, Enter, Ctrl+X
 ```
 
 ### 2. Build and Run the Docker Container
@@ -214,7 +200,7 @@ In your Chrome extension project, ensure your `config.js` has the correct EC2 IP
 const config = {
   isProduction: true,
   api: {
-    baseUrl: "http://your-ec2-public-ip:8000", // Replace with your EC2 public IP
+    baseUrl: "http://your-ec2-public-ip", // Replace with your EC2 public IP
   },
   // ... other config options
 };
@@ -235,7 +221,7 @@ content_security_policy: {
 host_permissions: [
   "http://localhost:*/*",
   "http://127.0.0.1:*/*",
-  "http://your-ec2-public-ip:8000/*",
+  "http://your-ec2-public-ip/*",
 ],
 ```
 
