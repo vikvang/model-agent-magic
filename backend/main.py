@@ -56,8 +56,13 @@ app = FastAPI(
 # Add CORS middleware with more permissive settings
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins
-    allow_credentials=False,  # Changed to False for compatibility with wildcard origin
+    allow_origins=[
+        "chrome-extension://bpoeahfpbjimmjjgjiojokbljpgpjjee",  # Your specific extension ID
+        "chrome-extension://*",  # Generic pattern - may not work as expected
+        "http://localhost:3000",
+        "http://localhost:5173",
+    ],
+    allow_credentials=True,
     allow_methods=["*"],  # Allow all methods
     allow_headers=["*"],  # Allow all headers
     expose_headers=["*"],
@@ -70,7 +75,7 @@ async def global_exception_handler(request: Request, exc: Exception):
     print(f"Global exception handler caught: {str(exc)}")
     traceback.print_exc()
     return JSONResponse(
-        status_code=500,
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={"detail": str(exc), "type": str(type(exc).__name__)},
     )
 
@@ -92,6 +97,19 @@ async def log_requests(request, call_next):
     
     # Don't manually set CORS headers here - let the CORS middleware handle it
     return response
+
+# Add specific handler for OPTIONS requests to support CORS preflight
+@app.options("/{rest_of_path:path}")
+async def options_handler(request: Request, rest_of_path: str):
+    return JSONResponse(
+        content="OK",
+        headers={
+            "Access-Control-Allow-Origin": request.headers.get("origin", "*"),
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With",
+            "Access-Control-Allow-Credentials": "true",
+        }
+    )
 
 @app.get("/")
 async def root():

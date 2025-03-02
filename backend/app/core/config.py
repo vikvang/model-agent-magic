@@ -30,7 +30,8 @@ class Settings:
     FRONTEND_URL: str = os.getenv("FRONTEND_URL", "chrome-extension://*/")
     CORS_ORIGINS: list = [
         FRONTEND_URL,
-        "chrome-extension://*/",
+        "chrome-extension://bpoeahfpbjimmjjgjiojokbljpgpjjee",  # Your specific extension ID
+        "chrome-extension://*",
         "http://localhost:3000",
         "http://localhost:5173",
     ]
