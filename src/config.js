@@ -5,8 +5,9 @@
  * In development, it uses localhost. In production, it uses EC2 public IP.
  */
 
-// Determine if we're in production mode
-const isProduction = !window.location.href.includes("localhost");
+// Force production mode for the extension
+// This ensures we always use the EC2 backend when the extension is loaded in Chrome
+const isProduction = true;
 
 // Default model for prompt optimization based on user preference
 // This is separate from the AI provider setting
@@ -23,7 +24,7 @@ const config = {
   api: {
     // Base API URL - this should be updated when deployed
     baseUrl: isProduction
-      ? "http://your-ec2-public-ip" // Replace with your EC2 public IP or domain
+      ? "http://3.95.190.47" // EC2 public IP
       : "http://localhost:8000",
 
     // API endpoints

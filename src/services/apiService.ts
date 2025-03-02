@@ -1,4 +1,5 @@
 import { AgentRole, ModelType } from "@/types/agent";
+import config from "../config"; // Import the config
 
 interface AgentMessage {
   type: string;
@@ -37,8 +38,8 @@ interface GregifyResponse {
 export class ApiService {
   private static BASE_URL = "http://localhost:5678/webhook";
   private static API_ENDPOINT = "9efe590c-2792-4468-8094-613c55c7ab89";
-  private static AGENT_URL = "http://localhost:8000"; // AutoGen backend
-  private static RAG_URL = "http://localhost:8000/rag"; // RAG endpoint
+  private static AGENT_URL = config.api.baseUrl; // Use config instead of hardcoded URL
+  private static RAG_URL = `${config.api.baseUrl}/rag`; // Use config instead of hardcoded URL
 
   // MAS endpoint - commented out
   /*

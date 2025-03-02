@@ -53,7 +53,7 @@ const enhancedManifest = {
   // Use existing CSP if available in root manifest, otherwise use default
   content_security_policy: rootManifest.content_security_policy || {
     extension_pages:
-      "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'; connect-src 'self' http://localhost:* http://127.0.0.1:* https://xfcuhjsxodypspldaorz.supabase.co/* https://*",
+      "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'; connect-src * http://localhost:* http://127.0.0.1:* https://xfcuhjsxodypspldaorz.supabase.co/* https://* https://chat.openai.com/* https://chatgpt.com/* https://*.supabase.co/* http://3.95.190.47/*",
   },
   
   background: {
@@ -73,7 +73,12 @@ const enhancedManifest = {
       matches: ["https://chat.openai.com/*", "https://chatgpt.com/*"],
     },
   ],
-  host_permissions: ["http://localhost:8000/*", "http://localhost:5678/*"],
+  host_permissions: [
+    "http://localhost:*/*",
+    "http://127.0.0.1:*/*",
+    "http://3.95.190.47/*",
+    "http://3.95.190.47/normal-prompt",
+  ],
 
   // Keep existing icons if present
   icons: rootManifest.icons || distManifest.icons || {
