@@ -71,6 +71,28 @@ app.add_middleware(
     max_age=3600,
 )
 
+# Add a middleware to explicitly add CORS headers (will run after all other middlewares)
+@app.middleware("http")
+async def add_cors_headers(request, call_next):
+    # Process the request and get the response
+    response = await call_next(request)
+    
+    # Get the origin from the request
+    origin = request.headers.get("origin", "")
+    
+    # Always add CORS headers, especially for /normal-prompt
+    if origin == "chrome-extension://bpoeahfpbjimmjjgjiojokbljpgpjjee" or "/normal-prompt" in request.url.path:
+        # Log that we're forcibly adding headers for debugging
+        print(f"Forcibly adding CORS headers for {request.url.path} from origin {origin}")
+        
+        # Add the headers
+        response.headers["Access-Control-Allow-Origin"] = "chrome-extension://bpoeahfpbjimmjjgjiojokbljpgpjjee"
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Requested-With"
+    
+    return response
+
 # Add global exception handler
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
@@ -226,7 +248,15 @@ class NormalPromptResponse(BaseModel):
 @app.options("/normal-prompt")
 async def normal_prompt_options():
     """Handle OPTIONS preflight requests for normal-prompt endpoint."""
-    return {}  # FastAPI will automatically add CORS headers
+    return JSONResponse(
+        content="OK",
+        headers={
+            "Access-Control-Allow-Origin": "chrome-extension://bpoeahfpbjimmjjgjiojokbljpgpjjee",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With, Origin",
+            "Access-Control-Allow-Credentials": "true",
+        }
+    )
 
 @app.post("/normal-prompt")
 async def normal_prompt(request: PromptRequest) -> NormalPromptResponse:
@@ -235,10 +265,18 @@ async def normal_prompt(request: PromptRequest) -> NormalPromptResponse:
         # Validate role
         if request.role not in ROLE_CONFIGS:
             print(f"Invalid role: {request.role}")
-            return NormalPromptResponse(
-                success=False,
-                response="",
-                error=f"Invalid role: {request.role}"
+            return JSONResponse(
+                content=NormalPromptResponse(
+                    success=False,
+                    response="",
+                    error=f"Invalid role: {request.role}"
+                ).dict(),
+                headers={
+                    "Access-Control-Allow-Origin": "chrome-extension://bpoeahfpbjimmjjgjiojokbljpgpjjee",
+                    "Access-Control-Allow-Credentials": "true",
+                    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+                    "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With, Origin",
+                }
             )
         
         # Get the role config
@@ -264,10 +302,18 @@ async def normal_prompt(request: PromptRequest) -> NormalPromptResponse:
                 
                 if not supabase_url or not supabase_key:
                     print(f"ERROR: Missing Supabase configuration - URL: {supabase_url}, Key: {supabase_key[:10] if supabase_key else None}")
-                    return NormalPromptResponse(
-                        success=False,
-                        response="",
-                        error="Server configuration error: Missing Supabase credentials"
+                    return JSONResponse(
+                        content=NormalPromptResponse(
+                            success=False,
+                            response="",
+                            error="Server configuration error: Missing Supabase credentials"
+                        ).dict(),
+                        headers={
+                            "Access-Control-Allow-Origin": "chrome-extension://bpoeahfpbjimmjjgjiojokbljpgpjjee",
+                            "Access-Control-Allow-Credentials": "true",
+                            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+                            "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With, Origin",
+                        }
                     )
                 
                 print(f"Creating Supabase client with URL: {supabase_url}")
@@ -305,10 +351,18 @@ async def normal_prompt(request: PromptRequest) -> NormalPromptResponse:
                                 print(f"Using user's DeepSeek API key: {user_deepseek_key[:5]}...")
                             else:
                                 print("User has no DeepSeek API key")
-                                return NormalPromptResponse(
-                                    success=False,
-                                    response="",
-                                    error="You need to add your DeepSeek API key in settings to use DeepSeek models"
+                                return JSONResponse(
+                                    content=NormalPromptResponse(
+                                        success=False,
+                                        response="",
+                                        error="You need to add your DeepSeek API key in settings to use DeepSeek models"
+                                    ).dict(),
+                                    headers={
+                                        "Access-Control-Allow-Origin": "chrome-extension://bpoeahfpbjimmjjgjiojokbljpgpjjee",
+                                        "Access-Control-Allow-Credentials": "true",
+                                        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+                                        "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With, Origin",
+                                    }
                                 )
                                 
                         elif provider == "openai":
@@ -318,10 +372,18 @@ async def normal_prompt(request: PromptRequest) -> NormalPromptResponse:
                                 print(f"Using user's OpenAI API key: {user_openai_key[:5]}...")
                             else:
                                 print("User has no OpenAI API key")
-                                return NormalPromptResponse(
-                                    success=False,
-                                    response="",
-                                    error="You need to add your OpenAI API key in settings to use OpenAI models"
+                                return JSONResponse(
+                                    content=NormalPromptResponse(
+                                        success=False,
+                                        response="",
+                                        error="You need to add your OpenAI API key in settings to use OpenAI models"
+                                    ).dict(),
+                                    headers={
+                                        "Access-Control-Allow-Origin": "chrome-extension://bpoeahfpbjimmjjgjiojokbljpgpjjee",
+                                        "Access-Control-Allow-Credentials": "true",
+                                        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+                                        "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With, Origin",
+                                    }
                                 )
                     else:
                         print(f"No API keys found for user ID: {user_id}")
@@ -409,27 +471,51 @@ Remember to strictly follow the format specified in your instructions, with sepa
             
             print(f"Received response from {provider} (first 100 chars): {response_text[:100]}...")
             
-            return NormalPromptResponse(
-                success=True,
-                response=response_text,
-                error=None
+            return JSONResponse(
+                content=NormalPromptResponse(
+                    success=True,
+                    response=response_text,
+                    error=None
+                ).dict(),
+                headers={
+                    "Access-Control-Allow-Origin": "chrome-extension://bpoeahfpbjimmjjgjiojokbljpgpjjee",
+                    "Access-Control-Allow-Credentials": "true",
+                    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+                    "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With, Origin",
+                }
             )
         except Exception as api_error:
             # Log detailed API error
             print(f"ERROR in {provider} API call: {str(api_error)}")
             print(f"API error type: {type(api_error).__name__}")
             
-            return NormalPromptResponse(
-                success=False,
-                response="",
-                error=f"{provider.upper()} API Error: {str(api_error)}"
+            return JSONResponse(
+                content=NormalPromptResponse(
+                    success=False,
+                    response="",
+                    error=f"{provider.upper()} API Error: {str(api_error)}"
+                ).dict(),
+                headers={
+                    "Access-Control-Allow-Origin": "chrome-extension://bpoeahfpbjimmjjgjiojokbljpgpjjee",
+                    "Access-Control-Allow-Credentials": "true",
+                    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+                    "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With, Origin",
+                }
             )
     except Exception as e:
         print(f"General error in normal_prompt: {str(e)}")
-        return NormalPromptResponse(
-            success=False,
-            response="",
-            error=f"Error: {str(e)}"
+        return JSONResponse(
+            content=NormalPromptResponse(
+                success=False,
+                response="",
+                error=f"Error: {str(e)}"
+            ).dict(),
+            headers={
+                "Access-Control-Allow-Origin": "chrome-extension://bpoeahfpbjimmjjgjiojokbljpgpjjee",
+                "Access-Control-Allow-Credentials": "true",
+                "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+                "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With, Origin",
+            }
         )
 
 @app.post("/process-prompt")
