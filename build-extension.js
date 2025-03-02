@@ -9,6 +9,18 @@ const __dirname = path.dirname(__filename);
 
 console.log("Starting build extension script...");
 
+// First check if there's a manifest in the root directory
+let rootManifest = {};
+try {
+  const rootManifestPath = path.join(__dirname, "manifest.json");
+  if (fs.existsSync(rootManifestPath)) {
+    rootManifest = JSON.parse(fs.readFileSync(rootManifestPath, "utf8"));
+    console.log("Read existing root manifest");
+  }
+} catch (error) {
+  console.error("Error reading root manifest:", error);
+}
+
 // Read the current manifest in the dist folder (if it exists)
 let distManifest = {};
 try {
@@ -25,21 +37,25 @@ try {
 const enhancedManifest = {
   ...distManifest, // Keep existing properties
   manifest_version: 3,
-  name: distManifest.name || "Gregify",
+  name: rootManifest.name || distManifest.name || "Gregify",
   description:
+    rootManifest.description ||
     distManifest.description ||
     "AI-powered prompt enhancement using RAG and Multi-Agent Systems",
-  version: distManifest.version || "1.0",
+  version: rootManifest.version || distManifest.version || "1.0",
   action: {
     default_popup: "index.html",
     default_width: 400,
     default_height: 600,
   },
   permissions: ["tabs", "activeTab", "scripting"],
-  content_security_policy: {
+  
+  // Use existing CSP if available in root manifest, otherwise use default
+  content_security_policy: rootManifest.content_security_policy || {
     extension_pages:
-      "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'; connect-src 'self' http://localhost:* http://127.0.0.1:*",
+      "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'; connect-src 'self' http://localhost:* http://127.0.0.1:* https://xfcuhjsxodypspldaorz.supabase.co/* https://*",
   },
+  
   background: {
     service_worker: "background.js",
     type: "module",
@@ -60,7 +76,7 @@ const enhancedManifest = {
   host_permissions: ["http://localhost:8000/*", "http://localhost:5678/*"],
 
   // Keep existing icons if present
-  icons: distManifest.icons || {
+  icons: rootManifest.icons || distManifest.icons || {
     16: "icons/icon16.png",
     48: "icons/icon48.png",
     128: "icons/icon128.png",

@@ -7,8 +7,11 @@ from dotenv import load_dotenv
 from typing import List, Dict, Optional
 from datetime import datetime, timedelta
 
-# Load environment variables
-load_dotenv()
+# Load environment variables from datacapture/.env file
+current_dir = os.path.dirname(os.path.abspath(__file__))
+env_path = os.path.join(current_dir, '.env')
+print(f"Loading Twitter API credentials from: {env_path}")
+load_dotenv(dotenv_path=env_path, override=True)
 
 class TwitterScraper:
     def __init__(self):

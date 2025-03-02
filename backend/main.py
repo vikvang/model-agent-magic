@@ -13,22 +13,38 @@ from agents.critic import CriticAgent
 from agents.refiner import RefinerAgent
 from agents.evaluator import EvaluatorAgent
 from agents.config import ROLE_CONFIGS, BASE_CONFIG
+from supabase import create_client
 
-# Load environment variables
-load_dotenv()
+# Load environment variables from root .env file explicitly
+root_env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '.env')
+print(f"Loading environment variables from: {root_env_path}")
+load_dotenv(dotenv_path=root_env_path, override=True)
 
-# Configure API client for Perplexity
-api_key = os.getenv("OPENAI_API_KEY")
-if not api_key:
-    print("WARNING: No API key found in environment variables")
-    print("Please ensure you have a .env file with OPENAI_API_KEY set to your Perplexity API key")
+# Configure API client for DeepSeek
+deepseek_api_key = os.getenv("DEEPSEEK_API_KEY")
+if not deepseek_api_key:
+    print("WARNING: No DeepSeek API key found in environment variables")
+    print(f"Please ensure your .env file at {root_env_path} has DEEPSEEK_API_KEY set to your DeepSeek API key")
 else:
-    print(f"API key loaded successfully: {api_key[:5]}... (length: {len(api_key)})")
+    print(f"DeepSeek API key loaded successfully: {deepseek_api_key[:5]}... (length: {len(deepseek_api_key)})")
 
-# Create global client
-perplexity_client = OpenAI(
-    api_key=api_key,
-    base_url="https://api.perplexity.ai"
+# Configure API client for OpenAI
+openai_api_key = os.getenv("OPENAI_API_KEY")
+if not openai_api_key:
+    print("WARNING: No OpenAI API key found in environment variables")
+    print("Please ensure you have a .env file with OPENAI_API_KEY set to your OpenAI API key")
+else:
+    print(f"OpenAI API key loaded successfully: {openai_api_key[:5]}... (length: {len(openai_api_key)})")
+
+# Create global clients
+deepseek_client = OpenAI(
+    api_key=deepseek_api_key,
+    base_url="https://api.deepseek.com/v1"
+)
+
+openai_client = OpenAI(
+    api_key=openai_api_key,
+    # Use default OpenAI base URL
 )
 
 app = FastAPI(
@@ -93,39 +109,65 @@ async def root():
 async def health_check():
     """Health check endpoint to verify API connectivity."""
     # Also check if the API key is configured
-    if not api_key:
+    if not deepseek_api_key:
         return {"status": "warning", "message": "Server is running but API key is missing"}
     
     return {
         "status": "healthy",
-        "api_configured": bool(api_key),
-        "api_key_length": len(api_key) if api_key else 0,
+        "api_configured": bool(deepseek_api_key),
+        "api_key_length": len(deepseek_api_key) if deepseek_api_key else 0,
         "roles_available": list(ROLE_CONFIGS.keys())
     }
 
 @app.get("/test-api")
-async def test_perplexity_api():
-    """Test endpoint to verify Perplexity API is working."""
+async def test_api(provider: str = "deepseek"):
+    """Test endpoint to verify API connectivity."""
     try:
-        if not api_key:
-            return {"success": False, "error": "API key is not configured"}
-        
-        # Make a simple API call
-        response = perplexity_client.chat.completions.create(
-            model="sonar",
-            messages=[
-                {"role": "user", "content": "Hello from Gregify! This is a test message."}
-            ],
-            max_tokens=100
-        )
-        
-        return {
-            "success": True,
-            "message": "API test successful",
-            "response": response.choices[0].message.content,
-            "model": response.model,
-            "api_key_configured": bool(api_key)
-        }
+        if provider == "deepseek":
+            if not deepseek_api_key:
+                return {"success": False, "error": "DeepSeek API key is not configured"}
+            
+            # Make a simple API call with a standard DeepSeek model
+            response = deepseek_client.chat.completions.create(
+                model="deepseek-chat",
+                messages=[
+                    {"role": "user", "content": "Hello from Gregify! This is a test message."}
+                ],
+                max_tokens=100
+            )
+            
+            return {
+                "success": True,
+                "message": "DeepSeek API test successful",
+                "response": response.choices[0].message.content,
+                "model": response.model,
+                "api_key_configured": bool(deepseek_api_key)
+            }
+        elif provider == "openai":
+            if not openai_api_key:
+                return {"success": False, "error": "OpenAI API key is not configured"}
+            
+            # Make a simple API call with GPT-4o mini
+            response = openai_client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "user", "content": "Hello from Gregify! This is a test message."}
+                ],
+                max_tokens=100
+            )
+            
+            return {
+                "success": True,
+                "message": "OpenAI API test successful",
+                "response": response.choices[0].message.content,
+                "model": response.model,
+                "api_key_configured": bool(openai_api_key)
+            }
+        else:
+            return {
+                "success": False,
+                "error": f"Unknown provider: {provider}"
+            }
     except Exception as e:
         error_trace = traceback.format_exc()
         
@@ -134,7 +176,7 @@ async def test_perplexity_api():
             "error": str(e),
             "error_type": str(type(e).__name__),
             "traceback": error_trace,
-            "api_key_configured": bool(api_key)
+            "api_key_configured": bool(deepseek_api_key if provider == "deepseek" else openai_api_key)
         }
 
 class PromptRequest(BaseModel):
@@ -142,6 +184,7 @@ class PromptRequest(BaseModel):
     role: str
     model: str
     sessionId: str
+    provider: str = "deepseek"  # Add provider field with default value
 
 class AgentMessage(BaseModel):
     type: str
@@ -167,7 +210,7 @@ async def normal_prompt_options():
 
 @app.post("/normal-prompt")
 async def normal_prompt(request: PromptRequest) -> NormalPromptResponse:
-    """Process a prompt directly without the multi-agent system, using Perplexity's Sonar model."""
+    """Process a prompt directly using the specified AI model."""
     try:
         # Validate role
         if request.role not in ROLE_CONFIGS:
@@ -182,58 +225,169 @@ async def normal_prompt(request: PromptRequest) -> NormalPromptResponse:
         role_config = ROLE_CONFIGS[request.role]
         print(f"Role config keys: {role_config.keys()}")
         
-        # Check if API key is available
-        if not api_key:
-            print("ERROR: No API key found in environment variables")
+        # Use the provider from the request (falls back to default "deepseek")
+        provider = request.provider
+        print(f"Using provider: {provider}")
+        print(f"Selected model for prompt optimization: {request.model}")
+        
+        # Initialize provider clients to None
+        user_deepseek_client = None
+        user_openai_client = None
+        
+        # Get user ID from session if available
+        user_id = None
+        if request.sessionId:
+            try:
+                # Try to extract user ID from session
+                supabase_url = os.getenv('VITE_SUPABASE_URL')
+                supabase_key = os.getenv('VITE_SUPABASE_ANON_KEY')
+                
+                if not supabase_url or not supabase_key:
+                    print(f"ERROR: Missing Supabase configuration - URL: {supabase_url}, Key: {supabase_key[:10] if supabase_key else None}")
+                    return NormalPromptResponse(
+                        success=False,
+                        response="",
+                        error="Server configuration error: Missing Supabase credentials"
+                    )
+                
+                print(f"Creating Supabase client with URL: {supabase_url}")
+                # Check if we have a service role key for higher privileges (recommended for accessing sensitive data)
+                service_role_key = os.getenv('SUPABASE_SERVICE_ROLE_KEY')
+                if service_role_key:
+                    print("Using service role key for database access (higher privileges)")
+                    supabase_client = create_client(supabase_url, service_role_key)
+                else:
+                    print("WARNING: Using anon key for database access - service role key recommended for API key retrieval")
+                    # Fall back to anon key if service role key not available
+                    supabase_client = create_client(supabase_url, supabase_key)
+                
+                # Use the session ID directly as the user ID
+                user_id = request.sessionId
+                print(f"Using session ID as user_id: {user_id}")
+                
+                # Retrieve the user's API keys
+                try:
+                    api_keys_result = supabase_client.table('user_api_keys').select(
+                        'openai_api_key, deepseek_api_key'
+                    ).eq('user_id', user_id).execute()
+                    
+                    print(f"API keys query result: {api_keys_result}")
+                    
+                    if api_keys_result.data and len(api_keys_result.data) > 0:
+                        user_api_keys = api_keys_result.data[0]
+                        print(f"Found user API keys: OpenAI: {'Yes' if user_api_keys.get('openai_api_key') else 'No'}, DeepSeek: {'Yes' if user_api_keys.get('deepseek_api_key') else 'No'}")
+                        
+                        # Use the user's API key based on the provider
+                        if provider == "deepseek":
+                            if user_api_keys.get('deepseek_api_key'):
+                                user_deepseek_key = user_api_keys.get('deepseek_api_key')
+                                user_deepseek_client = OpenAI(api_key=user_deepseek_key, base_url="https://api.deepseek.com/v1")
+                                print(f"Using user's DeepSeek API key: {user_deepseek_key[:5]}...")
+                            else:
+                                print("User has no DeepSeek API key")
+                                return NormalPromptResponse(
+                                    success=False,
+                                    response="",
+                                    error="You need to add your DeepSeek API key in settings to use DeepSeek models"
+                                )
+                                
+                        elif provider == "openai":
+                            if user_api_keys.get('openai_api_key'):
+                                user_openai_key = user_api_keys.get('openai_api_key')
+                                user_openai_client = OpenAI(api_key=user_openai_key)
+                                print(f"Using user's OpenAI API key: {user_openai_key[:5]}...")
+                            else:
+                                print("User has no OpenAI API key")
+                                return NormalPromptResponse(
+                                    success=False,
+                                    response="",
+                                    error="You need to add your OpenAI API key in settings to use OpenAI models"
+                                )
+                    else:
+                        print(f"No API keys found for user ID: {user_id}")
+                        return NormalPromptResponse(
+                            success=False,
+                            response="",
+                            error="No API keys found. Please add your API keys in your profile settings."
+                        )
+                except Exception as db_error:
+                    print(f"Database error retrieving API keys: {str(db_error)}")
+                    traceback.print_exc()
+                    return NormalPromptResponse(
+                        success=False,
+                        response="",
+                        error=f"Error retrieving your API keys: {str(db_error)}"
+                    )
+                    
+            except Exception as e:
+                print(f"Error retrieving user API keys: {str(e)}")
+                traceback.print_exc()
+                return NormalPromptResponse(
+                    success=False,
+                    response="",
+                    error=f"Authentication error: {str(e)}"
+                )
+        else:
+            print("No session ID provided")
             return NormalPromptResponse(
                 success=False,
                 response="",
-                error="Missing API key. Please check your .env file"
+                error="No session ID provided. Please log in to use this feature."
             )
         
-        print(f"Using API key: {api_key[:5]}... (key length: {len(api_key)})")
+        # Select the appropriate client based on provider
+        client = None
+        if provider == "deepseek":
+            # Use user's client (we've validated it exists above)
+            client = user_deepseek_client
+            api_model = "deepseek-chat"  # Model to use with DeepSeek API
+            print(f"Using DeepSeek client with model: {api_model}")
+        elif provider == "openai":
+            # Use user's client (we've validated it exists above)
+            client = user_openai_client
+            api_model = "gpt-4o-mini"  # Model to use with OpenAI API
+            print(f"Using OpenAI client with model: {api_model}")
+        else:
+            return NormalPromptResponse(
+                success=False,
+                response="",
+                error=f"Unknown provider: {provider}"
+            )
         
-        # Create a clear system message that emphasizes prompt enhancement, not answering
-        system_message = f"""You are a prompt optimization expert specializing in {request.role} topics. Your task is to IMPROVE the given prompt, not to answer it. 
+        print(f"Using {provider.upper()} for this request")
         
-        Focus on making the original prompt:
-        1. More specific and detailed
-        2. Better structured
-        3. More likely to get a high-quality response
-        4. Include relevant context and constraints
+        # Construct system message from role config
+        system_message = role_config.get("system_message", "")
+        if not system_message:
+            print("WARNING: No system message found in role config")
+            system_message = "You are a helpful assistant."
         
-        Role-specific guidance for {request.role}:
-        {role_config.get('system_message', 'Optimize for clarity and specificity in this domain.')}
+        # Construct user prompt message
+        user_prompt = request.prompt
         
-        DO NOT answer the prompt's question - instead, rewrite it to be a better prompt.
-        
-        Your response should be in this format:
-        "Enhanced prompt: [your improved version of the prompt]"
-        
-        Followed by a brief explanation of what you improved and why.
-        """
-        
-        user_prompt = f"Original prompt: {request.prompt}\nRole context: I am asking as a {request.role}."
-        
-        print(f"Sending enhanced request to model for role: {request.role}")
-        print(f"System message: {system_message[:100]}...")
-        print(f"User prompt: {user_prompt}")
+        print(f"System message: {system_message[:50]}...")
+        print(f"User prompt: {user_prompt[:50]}...")
         
         try:
-            response = perplexity_client.chat.completions.create(
-                model="sonar",
+            # Create the completion using the selected client
+            response = client.chat.completions.create(
+                model=api_model,
                 messages=[
                     {"role": "system", "content": system_message},
-                    {"role": "user", "content": user_prompt}
+                    {"role": "user", "content": f"""Please enhance the following prompt:
+
+{user_prompt}
+
+Remember to strictly follow the format specified in your instructions, with separate 'Enhanced Prompt:' and 'Explanation:' sections."""}
                 ],
-                temperature=0.7,
+                temperature=0.5,  # Lower temperature for more consistent formatting
                 max_tokens=1500
             )
             
             # Extract the response
             response_text = response.choices[0].message.content
             
-            print(f"Received response from model (first 100 chars): {response_text[:100]}...")
+            print(f"Received response from {provider} (first 100 chars): {response_text[:100]}...")
             
             return NormalPromptResponse(
                 success=True,
@@ -242,29 +396,27 @@ async def normal_prompt(request: PromptRequest) -> NormalPromptResponse:
             )
         except Exception as api_error:
             # Log detailed API error
-            print(f"ERROR in API call: {str(api_error)}")
+            print(f"ERROR in {provider} API call: {str(api_error)}")
             print(f"API error type: {type(api_error).__name__}")
             
             return NormalPromptResponse(
                 success=False,
                 response="",
-                error=f"API Error: {str(api_error)}"
+                error=f"{provider.upper()} API Error: {str(api_error)}"
             )
-        
     except Exception as e:
-        print(f"ERROR in normal_prompt: {str(e)}")
-        print(f"Error type: {type(e).__name__}")
-        print(f"Traceback: {traceback.format_exc()}")
-        
+        print(f"General error in normal_prompt: {str(e)}")
         return NormalPromptResponse(
             success=False,
             response="",
-            error=f"General Error: {str(e)}"
+            error=f"Error: {str(e)}"
         )
 
 @app.post("/process-prompt")
 async def process_prompt(request: PromptRequest) -> PromptResponse:
     """Process a prompt through the multi-agent system."""
+    # Commenting out MAS mode as requested
+    """
     try:
         # Validate role
         if request.role not in ROLE_CONFIGS:
@@ -352,6 +504,14 @@ async def process_prompt(request: PromptRequest) -> PromptResponse:
             final_prompt="",
             error=str(e)
         )
+    """
+    # Return a response indicating MAS mode is disabled
+    return PromptResponse(
+        success=False,
+        messages=[],
+        final_prompt="",
+        error="MAS mode is currently disabled. Please use normal mode instead."
+    )
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
