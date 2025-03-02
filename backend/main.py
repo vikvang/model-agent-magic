@@ -169,17 +169,17 @@ async def root():
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint to verify API connectivity."""
-    # Also check if the API key is configured
-    if not deepseek_api_key:
-        return {"status": "warning", "message": "Server is running but API key is missing"}
-    
-    return {
-        "status": "healthy",
-        "api_configured": bool(deepseek_api_key),
-        "api_key_length": len(deepseek_api_key) if deepseek_api_key else 0,
-        "roles_available": list(ROLE_CONFIGS.keys())
-    }
+    """Simplified health check endpoint to verify API connectivity."""
+    print("Health check endpoint called")
+    return JSONResponse(
+        status_code=200,
+        content={"status": "healthy"},
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, OPTIONS",
+            "Access-Control-Allow-Headers": "*",
+        }
+    )
 
 @app.get("/test-api")
 async def test_api(provider: str = "deepseek"):
@@ -640,6 +640,42 @@ async def process_prompt(request: PromptRequest) -> PromptResponse:
         messages=[],
         final_prompt="",
         error="MAS mode is currently disabled. Please use normal mode instead."
+    )
+
+@app.get("/debug")
+async def debug_info():
+    """Debug endpoint to get information about the running application."""
+    import sys
+    import platform
+    import os
+    
+    # Collect environment variables (without sensitive values)
+    env_vars = {k: v if not ('KEY' in k.upper() or 'SECRET' in k.upper() or 'PASSWORD' in k.upper()) 
+                else f"{v[:3]}...{v[-3:]}" if v and len(v) > 6 else "***" 
+                for k, v in os.environ.items()}
+    
+    return JSONResponse(
+        status_code=200,
+        content={
+            "status": "running",
+            "python_version": sys.version,
+            "platform": platform.platform(),
+            "environment": os.environ.get("ENVIRONMENT", "unknown"),
+            "env_keys": list(env_vars.keys()),
+            "port": os.environ.get("PORT", "unknown"),
+            "endpoints": [
+                {"path": "/", "methods": ["GET"]},
+                {"path": "/health", "methods": ["GET"]},
+                {"path": "/debug", "methods": ["GET"]},
+                {"path": "/normal-prompt", "methods": ["POST", "OPTIONS"]},
+                {"path": "/process-prompt", "methods": ["POST"]}
+            ]
+        },
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, OPTIONS",
+            "Access-Control-Allow-Headers": "*",
+        }
     )
 
 if __name__ == "__main__":
