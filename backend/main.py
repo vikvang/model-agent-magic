@@ -135,6 +135,26 @@ async def options_handler(request: Request, rest_of_path: str):
         }
     )
 
+# Add specific exception handler for OPTIONS requests
+@app.exception_handler(Exception)
+async def options_exception_handler(request: Request, exc: Exception):
+    if request.method == "OPTIONS":
+        print(f"Exception in OPTIONS request: {str(exc)}")
+        traceback.print_exc()
+        # Always return a valid OPTIONS response even if there's an error
+        return JSONResponse(
+            status_code=200,
+            content={},
+            headers={
+                "Access-Control-Allow-Origin": "chrome-extension://bpoeahfpbjimmjjgjiojokbljpgpjjee",
+                "Access-Control-Allow-Methods": "POST, OPTIONS",
+                "Access-Control-Allow-Headers": "*",
+                "Access-Control-Allow-Credentials": "true",
+            }
+        )
+    # For non-OPTIONS requests, let the global handler take over
+    raise exc
+
 @app.get("/")
 async def root():
     """Root endpoint with API information."""
@@ -248,12 +268,15 @@ class NormalPromptResponse(BaseModel):
 @app.options("/normal-prompt")
 async def normal_prompt_options():
     """Handle OPTIONS preflight requests for normal-prompt endpoint."""
+    print("OPTIONS request received for /normal-prompt")
+    # Return the simplest possible response with required headers
     return JSONResponse(
-        content="OK",
+        status_code=200,
+        content={},
         headers={
             "Access-Control-Allow-Origin": "chrome-extension://bpoeahfpbjimmjjgjiojokbljpgpjjee",
-            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-            "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With, Origin",
+            "Access-Control-Allow-Methods": "POST, OPTIONS",
+            "Access-Control-Allow-Headers": "*",
             "Access-Control-Allow-Credentials": "true",
         }
     )
