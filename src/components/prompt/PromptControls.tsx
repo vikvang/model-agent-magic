@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/select";
 import { AgentRole, ModelType, AIProvider } from "@/types/agent";
 import { supabase } from "@/lib/supabase";
+import { useStateWithStorage } from "@/hooks/useStateWithStorage";
 
 interface PromptControlsProps {
   selectedModel: ModelType;
@@ -29,7 +30,8 @@ export const PromptControls = ({
 }: PromptControlsProps) => {
   const [userApiKeys, setUserApiKeys] = useState<UserApiKeys>({});
   const [loading, setLoading] = useState<boolean>(true);
-  const [activeProvider, setActiveProvider] = useState<AIProvider | null>(null);
+  const [activeProvider, setActiveProvider] =
+    useStateWithStorage<AIProvider | null>("gregify_active_provider", null);
 
   // Load user API keys and set active provider
   useEffect(() => {
@@ -38,63 +40,70 @@ export const PromptControls = ({
       setLoading(true);
       try {
         // Get current user
-        const { data: userData } = await supabase.auth.getUser();
-        
-        if (userData?.user) {
-          // Fetch API keys for the user
-          const { data, error } = await supabase
-            .from('user_api_keys')
-            .select('openai_api_key, deepseek_api_key')
-            .eq('user_id', userData.user.id)
-            .single();
-          
-          if (error) {
-            console.error("Error fetching API keys:", error);
-          } else if (data) {
-            setUserApiKeys(data);
-            
-            // Determine which provider to use based on available API keys
-            if (data.openai_api_key) {
-              setActiveProvider("openai");
-              
-              // Only switch to OpenAI model if DeepSeek is selected but DeepSeek key is missing
-              if (selectedModel === 'deepseek' && !data.deepseek_api_key) {
-                console.log("Switching from DeepSeek to GPT-4 because DeepSeek API key is missing");
-                onModelChange('gpt4');
-              }
-              
-              // Store the provider preference
-              localStorage.setItem("gregify_ai_provider", "openai");
-            } else if (data.deepseek_api_key) {
-              setActiveProvider("deepseek");
-              
-              // If current model is from OpenAI but OpenAI key is missing, switch to DeepSeek
-              if ((selectedModel === 'gpt4' || selectedModel === 'gpt4o-mini') && !data.openai_api_key) {
-                console.log("Switching to DeepSeek because OpenAI API key is missing");
-                onModelChange('deepseek');
-              }
-              
-              // Store the provider preference
-              localStorage.setItem("gregify_ai_provider", "deepseek");
-            } else {
-              setActiveProvider(null);
-              onModelChange('none');
-            }
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (!user) {
+          console.log("No user found");
+          setLoading(false);
+          return;
+        }
+
+        // Get API keys
+        const { data, error } = await supabase
+          .from("user_api_keys")
+          .select("openai_api_key, deepseek_api_key")
+          .eq("user_id", user.id)
+          .single();
+
+        if (error) {
+          console.error("Error fetching API keys:", error);
+        } else if (data) {
+          setUserApiKeys(data);
+
+          // Determine active provider
+          const hasOpenAI = !!data.openai_api_key;
+          const hasDeepSeek = !!data.deepseek_api_key;
+
+          if (hasOpenAI) {
+            setActiveProvider("openai");
+          } else if (hasDeepSeek) {
+            setActiveProvider("deepseek");
+          } else {
+            setActiveProvider(null);
           }
         }
       } catch (error) {
-        console.error("Error fetching user data:", error);
+        console.error("Error in fetchUserApiKeys:", error);
       } finally {
         setLoading(false);
       }
     };
 
     fetchUserApiKeys();
-  }, [selectedModel, onModelChange]);
+  }, [setActiveProvider]);
+
+  // Update model when active provider changes
+  useEffect(() => {
+    // When provider changes, update the model selection
+    if (activeProvider === "openai") {
+      // Only update if the current model is not an OpenAI model
+      if (selectedModel !== "gpt4" && selectedModel !== "gpt4o-mini") {
+        onModelChange("gpt4");
+      }
+    } else if (activeProvider === "deepseek") {
+      if (selectedModel !== "deepseek") {
+        onModelChange("deepseek");
+      }
+    } else {
+      onModelChange("none");
+    }
+  }, [activeProvider, selectedModel, onModelChange]);
 
   // Check if OpenAI models should be shown
   const hasOpenAIKey = !!userApiKeys.openai_api_key;
-  
+
   // Check if DeepSeek models should be shown
   const hasDeepSeekKey = !!userApiKeys.deepseek_api_key;
 
@@ -104,13 +113,15 @@ export const PromptControls = ({
         <label className="text-sm font-medium text-zinc-300">
           Available Models
         </label>
-        <Select 
-          onValueChange={onModelChange} 
+        <Select
+          onValueChange={onModelChange}
           value={selectedModel}
           disabled={loading || (!hasOpenAIKey && !hasDeepSeekKey)}
         >
           <SelectTrigger className="w-full bg-[#2C2C30] text-white border-zinc-700 rounded-xl hover:bg-[#3C3C40] transition-colors">
-            <SelectValue placeholder={loading ? "Loading models..." : "Choose a model"} />
+            <SelectValue
+              placeholder={loading ? "Loading models..." : "Choose a model"}
+            />
           </SelectTrigger>
           <SelectContent className="bg-[#2C2C30] border-zinc-700 text-white">
             {hasOpenAIKey && (

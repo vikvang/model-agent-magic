@@ -49,13 +49,13 @@ const enhancedManifest = {
     default_height: 600,
   },
   permissions: ["tabs", "activeTab", "scripting"],
-  
+
   // Use existing CSP if available in root manifest, otherwise use default
   content_security_policy: rootManifest.content_security_policy || {
     extension_pages:
-      "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'; connect-src * http://localhost:* http://127.0.0.1:* https://xfcuhjsxodypspldaorz.supabase.co/* https://* https://chat.openai.com/* https://chatgpt.com/* https://*.supabase.co/* http://3.95.190.47/*",
+      "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'; connect-src * http://localhost:* http://127.0.0.1:* https://xfcuhjsxodypspldaorz.supabase.co/* https://* https://chat.openai.com/* https://chatgpt.com/* https://*.supabase.co/* http://3.144.207.70/*",
   },
-  
+
   background: {
     service_worker: "background.js",
     type: "module",
@@ -76,16 +76,17 @@ const enhancedManifest = {
   host_permissions: [
     "http://localhost:*/*",
     "http://127.0.0.1:*/*",
-    "http://3.95.190.47/*",
-    "http://3.95.190.47/normal-prompt",
+    "http://3.144.207.70/*",
+    "http://3.144.207.70/normal-prompt",
   ],
 
   // Keep existing icons if present
-  icons: rootManifest.icons || distManifest.icons || {
-    16: "icons/icon16.png",
-    48: "icons/icon48.png",
-    128: "icons/icon128.png",
-  },
+  icons: rootManifest.icons ||
+    distManifest.icons || {
+      16: "icons/icon16.png",
+      48: "icons/icon48.png",
+      128: "icons/icon128.png",
+    },
 };
 
 // Ensure root directory exists

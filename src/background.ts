@@ -1,12 +1,16 @@
 // Background script for the extension
 console.log("Gregify background script loaded");
 
-// Listen for messages from the popup
+// Listen for messages from the extension popup
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  console.log("Message received in background:", message);
+  console.log("Background script received message:", message);
 
+  // When enhancedPromptReady is received, forward it to the active tab
   if (message.action === "enhancedPromptReady") {
-    // Forward the enhanced prompt to the active tab (ChatGPT)
+    // Save to storage for state persistence
+    chrome.storage.local.set({ gregify_last_prompt: message.enhancedPrompt });
+
+    // Forward to active tab
     forwardToActiveTab(message.enhancedPrompt);
     sendResponse({ success: true });
     return true;
@@ -17,9 +21,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 /**
  * Forwards the enhanced prompt to the active tab
- * @param enhancedPrompt The enhanced prompt to forward
  */
-async function forwardToActiveTab(enhancedPrompt: string): Promise<void> {
+async function forwardToActiveTab(enhancedPrompt: string) {
   try {
     // Get the active tab
     const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -31,20 +34,40 @@ async function forwardToActiveTab(enhancedPrompt: string): Promise<void> {
 
     const activeTab = tabs[0];
 
-    // Check if the active tab is ChatGPT
+    // Make sure we're on ChatGPT
     if (!activeTab.url?.includes("chat.openai.com")) {
-      console.log("Active tab is not ChatGPT, not forwarding prompt");
+      console.log("Not on ChatGPT, not forwarding prompt");
       return;
     }
 
-    // Send the enhanced prompt to the content script
-    await chrome.tabs.sendMessage(activeTab.id!, {
-      action: "populatePrompt",
-      enhancedPrompt,
-    });
+    try {
+      // Send message to content script
+      await chrome.tabs.sendMessage(activeTab.id!, {
+        action: "populatePrompt",
+        enhancedPrompt,
+      });
+    } catch (error) {
+      console.error("Error sending message to tab:", error);
 
-    console.log("Enhanced prompt forwarded to content script");
+      // Fallback: inject script directly
+      await chrome.scripting.executeScript({
+        target: { tabId: activeTab.id! },
+        func: (prompt: string) => {
+          const textarea = document.querySelector(
+            "#prompt-textarea"
+          ) as HTMLTextAreaElement;
+          if (textarea) {
+            textarea.value = prompt;
+
+            // Trigger input event
+            textarea.dispatchEvent(new Event("input", { bubbles: true }));
+            textarea.focus();
+          }
+        },
+        args: [enhancedPrompt],
+      });
+    }
   } catch (error) {
-    console.error("Error forwarding enhanced prompt:", error);
+    console.error("Error in forwardToActiveTab:", error);
   }
 }

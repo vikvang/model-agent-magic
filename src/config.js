@@ -13,7 +13,8 @@ const isProduction = true;
 // This is separate from the AI provider setting
 const getDefaultModel = () => {
   // We still use a reasonable default based on provider
-  const preferredProvider = localStorage.getItem("gregify_ai_provider") || "deepseek";
+  const preferredProvider =
+    localStorage.getItem("gregify_ai_provider") || "deepseek";
   // But this is just for a better initial experience - they are decoupled
   return preferredProvider === "openai" ? "gpt4" : "deepseek";
 };
@@ -24,7 +25,7 @@ const config = {
   api: {
     // Base API URL - this should be updated when deployed
     baseUrl: isProduction
-      ? "http://3.95.190.47" // EC2 public IP
+      ? "http://3.144.207.70" // EC2 public IP
       : "http://localhost:8000",
 
     // API endpoints
@@ -65,7 +66,7 @@ const config = {
     userProfile: "gregify_user_profile",
     promptHistory: "gregify_prompt_history",
     settings: "gregify_settings",
-    aiProvider: "gregify_ai_provider"
+    aiProvider: "gregify_ai_provider",
   },
 };
 
