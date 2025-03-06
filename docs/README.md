@@ -1,5 +1,35 @@
 # Gregify
 
+AI-powered prompt enhancement using RAG and Multi-Agent Systems
+
+## Project Structure
+
+This project is organized into four main components:
+
+- **`/frontend`** - Chrome extension UI and frontend code
+- **`/backend`** - Python server for RAG and Multi-Agent Systems
+- **`/landingpage`** - Marketing website and landing page
+- **`/deployment`** - Docker and deployment configuration files
+
+## Getting Started
+
+Please see the individual README files in each directory for specific setup instructions:
+
+- [Frontend README](./frontend/README.md)
+- [Backend README](./backend/README.md)
+- [Landing Page README](./landingpage/README.md)
+
+## Features
+
+- AI-powered prompt enhancement
+- RAG (Retrieval Augmented Generation) for improved results
+- Multi-Agent Systems to provide comprehensive responses
+- Seamless integration with ChatGPT
+
+## License
+
+MIT
+
 A Chrome extension that enhances your prompts using three powerful approaches:
 
 - **Normal**: Direct prompt optimization with a single API call
@@ -33,7 +63,7 @@ RAG mode enhances prompts by incorporating relevant context and knowledge:
 
 MAS mode uses a collaborative system of specialized AI agents working together:
 
-1. **Critic Agent**: 
+1. **Critic Agent**:
 
    - Analyzes prompt structure and potential weaknesses
    - Identifies areas for improvement
@@ -151,7 +181,3 @@ python main.py
 - Components are in `src/components`
 - Pages are in `src/pages`
 - Backend code is in the `backend/` directory
-
-## License
-
-MIT License

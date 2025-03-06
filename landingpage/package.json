@@ -1,0 +1,15 @@
+{
+  "name": "gregify-landing-page",
+  "version": "1.0.0",
+  "description": "Landing page for Gregify - AI-powered prompt enhancement",
+  "main": "index.html",
+  "scripts": {
+    "start": "http-server src -p 3000",
+    "build": "mkdir -p dist && cp -r src/* dist/"
+  },
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}

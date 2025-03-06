@@ -6,13 +6,15 @@ import { fileURLToPath } from "url";
 // Get the directory name
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const rootDir = path.join(__dirname, "..");
 
 console.log("Starting build extension script...");
+console.log("Root directory:", rootDir);
 
 // First check if there's a manifest in the root directory
 let rootManifest = {};
 try {
-  const rootManifestPath = path.join(__dirname, "manifest.json");
+  const rootManifestPath = path.join(rootDir, "manifest.json");
   if (fs.existsSync(rootManifestPath)) {
     rootManifest = JSON.parse(fs.readFileSync(rootManifestPath, "utf8"));
     console.log("Read existing root manifest");
@@ -24,7 +26,7 @@ try {
 // Read the current manifest in the dist folder (if it exists)
 let distManifest = {};
 try {
-  const distManifestPath = path.join(__dirname, "dist", "manifest.json");
+  const distManifestPath = path.join(rootDir, "dist", "manifest.json");
   if (fs.existsSync(distManifestPath)) {
     distManifest = JSON.parse(fs.readFileSync(distManifestPath, "utf8"));
     console.log("Read existing dist manifest");
@@ -74,8 +76,6 @@ const enhancedManifest = {
     },
   ],
   host_permissions: [
-    "http://localhost:*/*",
-    "http://127.0.0.1:*/*",
     "http://3.144.207.70/*",
     "http://3.144.207.70/normal-prompt",
   ],
@@ -89,11 +89,13 @@ const enhancedManifest = {
     },
 };
 
-// Ensure root directory exists
-const rootDir = __dirname;
-console.log("Root directory:", rootDir);
-
 // Write the enhanced manifest to the root directory for the build process
+// Remove the 'key' field for Chrome Web Store submissions
+if (enhancedManifest.key) {
+  delete enhancedManifest.key;
+  console.log("Removed 'key' field for Chrome Web Store submission");
+}
+
 fs.writeFileSync(
   path.join(rootDir, "manifest.json"),
   JSON.stringify(enhancedManifest, null, 2)
@@ -401,8 +403,10 @@ function injectAndPopulate(prompt) {
   textarea.focus();
 }`;
 
-// Write the content and background scripts to the root directory
+// Write the enhanced content script to the root directory
 fs.writeFileSync(path.join(rootDir, "contentScript.js"), contentScript);
+
+// Write the enhanced background script to the root directory
 fs.writeFileSync(path.join(rootDir, "background.js"), backgroundScript);
 
 console.log("Created contentScript.js and background.js in root directory");
